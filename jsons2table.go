@@ -1,4 +1,4 @@
-package jsons2table
+package main
 
 import (
 	"fmt"
