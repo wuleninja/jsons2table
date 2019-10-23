@@ -14,7 +14,7 @@ import (
 )
 
 // main directory scanning function
-func scanDir(folderPath string) (results []*orderedMap, err error) {
+func scanDir(folderPath string) (results []*fileMap, err error) {
 
 	// checking the file infos
 	fileInfos, errDir := ioutil.ReadDir(folderPath)
@@ -37,7 +37,7 @@ func scanDir(folderPath string) (results []*orderedMap, err error) {
 }
 
 // main file scanning function
-func scanFile(folderPath string, fileName string) (*orderedMap, error) {
+func scanFile(folderPath string, fileName string) (*fileMap, error) {
 
 	// the file path
 	filePath := folderPath + string(os.PathSeparator) + fileName
@@ -56,14 +56,10 @@ func scanFile(folderPath string, fileName string) (*orderedMap, error) {
 	}
 
 	// unmarshalling the JSON content
-	rootMap := &orderedMap{name: strings.Replace(fileName, ".json", "", 1)}
+	rootMap := &fileMap{name: strings.Replace(fileName, ".json", "", 1)}
 	if errUnmarshall := json.Unmarshal(fileBytes, rootMap); errUnmarshall != nil {
 		return nil, fmt.Errorf("error while parsing the file at path: %s. Cause: %s", filePath, errUnmarshall)
 	}
-
-	// displaying the content (DEBUG)
-	println("===================================================================")
-	rootMap.display(0)
 
 	// we're fine
 	return rootMap, nil

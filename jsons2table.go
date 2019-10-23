@@ -1,21 +1,48 @@
 package main
 
 import (
+	"flag"
 	"fmt"
 	"os"
 	"sort"
 )
 
+var debugMode bool
+
+func debug(strfmt string, params ...interface{}) {
+	if debugMode {
+		println(fmt.Sprintf(strfmt, params...))
+	}
+}
+
 func main() {
 
-	// getting the args
-	args := os.Args[1:]
-	if len(args) == 0 {
-		err("Missing the folder name here! Please provide a path to a valid directory")
+	// a bit of doc
+	flag.Usage = func() {
+		fmt.Fprintf(os.Stderr, "usage: %s [flags] <folder_path>\n", os.Args[0])
+		fmt.Fprintf(os.Stderr, "\navailable flags:\n")
+		flag.PrintDefaults()
+		fmt.Fprintf(os.Stderr, "\narguments:\n")
+		fmt.Fprintf(os.Stderr, "  folder_path: mandatory - the path to the folder containing the JSON files\n")
+		fmt.Fprintf(os.Stderr, "\n")
+	}
+
+	// adding the flags
+	flag.BoolVar(&debugMode, "debug", false, "runs the program in debug mode with debug messages")
+	flag.Parse()
+
+	// controlling the args
+	if flag.NArg() == 0 {
+		println("\n/!\\ the folder path is missing!\n")
+		flag.Usage()
+		os.Exit(1)
+	}
+	if flag.NArg() > 1 {
+		err("too many arguments, we only need the folder path here!")
 	}
 
 	// getting the folder path, which should be a valid directory
-	folderPath := args[0]
+	folderPath := flag.Arg(0)
 	if _, errPath := os.Stat(folderPath); os.IsNotExist(errPath) {
 		err("'%s' is not a valid directory!", folderPath)
 	}
@@ -26,15 +53,19 @@ func main() {
 		err("error while scanning: %s", errScan)
 	}
 
-	// a bit of sorting
+	// a bit of sorting, to make sure the treatment is always the same
 	sort.Slice(fileMaps, func(i int, j int) bool {
 		return fileMaps[i].name < fileMaps[j].name
 	})
 
 	// merging all the maps to determine the common definition
-	// TODO
+	// commonDef := merge(fileMaps)
+	merge(fileMaps)
+
+	println("\nCHECK THAT ALL THE ORIGINAL ORDERS ARE PRESERVED\n")
 }
 
+// fatal error handling
 func err(strfmt string, args ...interface{}) {
 	fmt.Printf(strfmt+"\n", args...)
 	os.Exit(1)
