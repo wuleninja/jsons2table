@@ -77,9 +77,10 @@ func (commonDef *fileMap) digest(jsonMap *fileMap) *fileMap {
 
 				// if the kinds of the properties from the definition, and the current file map differ, then we have a problem
 				if existingProperty.kind != jsonMap.getPropertyKind(propertyName) {
-					panic(fmt.Sprintf("\n\nWe have a problem here: "+
+					panic(fmt.Sprintf("\n\nWe have a problem here with property: %s"+
 						"\ntype of '%s' is %s,"+
 						"\nbut type of '%s' is %s",
+						propertyName,
 						existingProperty.FullString(), existingProperty.kind,
 						jsonMap.chainedProperties[propertyName].FullString(), jsonMap.getPropertyKind(propertyName),
 					))
