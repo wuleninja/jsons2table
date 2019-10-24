@@ -61,8 +61,6 @@ func main() {
 	// merging all the maps to determine the common definition
 	// commonDef := merge(fileMaps)
 	merge(fileMaps)
-
-	println("\nCHECK THAT ALL THE ORIGINAL ORDERS ARE PRESERVED\n")
 }
 
 // fatal error handling

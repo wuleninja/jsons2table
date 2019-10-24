@@ -20,6 +20,7 @@ type fileMap struct {
 	orderedProperties []string                    // keeping track of the original order of the properties
 	originalContent   map[string]interface{}      // the raw info within this mal
 	chainedProperties map[string]*chainedProperty // the properties kept as chained values
+	propertyIndexes   map[string]int              // the index of each property in this map
 }
 
 // UnmarshalJSON : keeping the properties' order
@@ -50,13 +51,17 @@ func (thisMap *fileMap) displayOrdered(indent int, valueFn func(*fileMap, string
 	}
 	for _, propertyName := range thisMap.orderedProperties {
 		chainedProp := thisMap.chainedProperties[propertyName]
+		indexString := ""
+		if index := thisMap.propertyIndexes[propertyName]; index != 0 {
+			indexString = fmt.Sprintf("%d - ", index)
+		}
 		if submap, found := thisMap.subMaps[propertyName]; found {
-			println(fmt.Sprintf(strings.Repeat("  ", indent)+"'%s': [ previous = %s / next = %s ]",
-				propertyName, chainedProp.previous, chainedProp.next))
+			println(fmt.Sprintf(strings.Repeat("  ", indent)+"%s'%s': [ previous = %s / next = %s ]",
+				indexString, propertyName, chainedProp.previous, chainedProp.next))
 			submap.displayOrdered(indent+1, valueFn)
 		} else {
-			println(fmt.Sprintf(strings.Repeat("  ", indent)+"'%s': '%v' [ previous = %s / next = %s ]",
-				propertyName, valueFn(thisMap, propertyName), chainedProp.previous, chainedProp.next))
+			println(fmt.Sprintf(strings.Repeat("  ", indent)+"%s'%s': '%v' [ previous = %s / next = %s ]",
+				indexString, propertyName, valueFn(thisMap, propertyName), chainedProp.previous, chainedProp.next))
 		}
 	}
 }

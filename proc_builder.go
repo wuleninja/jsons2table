@@ -18,6 +18,7 @@ func (thisMap *fileMap) build(originalBytes []byte) *fileMap {
 	thisMap.subMaps = map[string]*fileMap{}
 	thisMap.values = map[string]interface{}{}
 	thisMap.chainedProperties = map[string]*chainedProperty{}
+	thisMap.propertyIndexes = map[string]int{}
 
 	// the index for each property of this map, regarding the given original bytes
 	propertiesIndexes := map[string]int{}
@@ -62,6 +63,7 @@ func (thisMap *fileMap) build(originalBytes []byte) *fileMap {
 		// new chained property into the map
 		property := &chainedProperty{owner: thisMap, name: propertyName}
 		thisMap.chainedProperties[propertyName] = property
+		thisMap.propertyIndexes[propertyName] = i + 1
 
 		// chaining this property with the preceding one
 		if i > 0 {

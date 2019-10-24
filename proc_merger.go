@@ -5,26 +5,38 @@
 
 package main
 
-import "fmt"
-
 // digesting all the file maps, to build a common definition for them
-func merge(fileMaps []*fileMap) *fileMap {
+func merge(jsonMaps []*fileMap) *fileMap {
 
 	commonDef := &fileMap{name: "Common definition"}
 
-	for _, fileMap := range fileMaps {
+	// digesting each JSON
+	for _, jsonMap := range jsonMaps {
+
+		// some debugging log
 		if debugMode {
-			fileMap.displayOrdered(0, showValue)
+			jsonMap.displayOrdered(0, showValue)
 		}
-		commonDef.digest(fileMap)
+
+		// digesting this JSON map into the common definition
+		commonDef.digest(jsonMap)
+
+		// some debugging log
 		if debugMode {
 			commonDef.reorder()
 			commonDef.displayOrdered(0, showKind)
 		}
 	}
 
+	// reordering the common definition
 	commonDef.reorder()
 
+	// controlling that this JSON map is shown some respect, regarding the common definition
+	for _, jsonMap := range jsonMaps {
+		commonDef.control(jsonMap)
+	}
+
+	// retunring, for what's next, i.e. using this common definition to create tables
 	return commonDef
 }
 
@@ -75,15 +87,16 @@ func (commonDef *fileMap) digest(jsonMap *fileMap) *fileMap {
 
 			} else {
 
-				// if the kinds of the properties from the definition, and the current file map differ, then we have a problem
+				// if the kind of the property from the definition, and the one from the file map differ,
+				// then we have a problem about a "common" definition
 				if existingProperty.kind != jsonMap.getPropertyKind(propertyName) {
-					panic(fmt.Sprintf("\n\nWe have a problem here with property: %s"+
+					err("\n\nWe have a problem here with property: %s"+
 						"\ntype of '%s' is %s,"+
 						"\nbut type of '%s' is %s",
 						propertyName,
 						existingProperty.FullString(), existingProperty.kind,
 						jsonMap.chainedProperties[propertyName].FullString(), jsonMap.getPropertyKind(propertyName),
-					))
+					)
 				}
 			}
 		}
@@ -106,14 +119,43 @@ func (commonDef *fileMap) reorder() {
 
 	// (re)init
 	commonDef.orderedProperties = []string{}
+	commonDef.propertyIndexes = map[string]int{}
 
 	// going from chained property to chained property
+	index := 1
 	for currentProperty := commonDef.oneChainedProperty().root(); currentProperty != nil; currentProperty = currentProperty.next {
 		commonDef.orderedProperties = append(commonDef.orderedProperties, currentProperty.name)
+		commonDef.propertyIndexes[currentProperty.name] = index
+		index++
 	}
 
 	// dealing with the submaps
 	for _, submap := range commonDef.subMaps {
 		submap.reorder()
+	}
+}
+
+// controlling that that the order of the properties is preserved in the common definition
+func (commonDef *fileMap) control(jsonMap *fileMap) {
+
+	// going through the JSON map to check that the order between 2 consecutive items
+	// is maintained in the common definition
+	for i := 1; i < len(jsonMap.orderedProperties); i++ {
+		propertyName := jsonMap.orderedProperties[i]
+		previousName := jsonMap.orderedProperties[i-1]
+		if commonDef.propertyIndexes[propertyName] < commonDef.propertyIndexes[previousName] {
+			property := jsonMap.chainedProperties[propertyName]
+			previous := jsonMap.chainedProperties[previousName]
+			err("\nThere's a problem here: "+
+				"\nwe have '%s' before '%s'"+
+				"\nbut the order is inversed in the common definition!",
+				property.FullString(), previous.FullString(),
+			)
+		}
+	}
+
+	// dealing with the submaps
+	for _, submap := range jsonMap.subMaps {
+		commonDef.subMaps[submap.name].control(submap)
 	}
 }

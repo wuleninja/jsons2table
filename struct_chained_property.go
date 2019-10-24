@@ -26,7 +26,7 @@ func (thisProperty *chainedProperty) String() string {
 func (thisProperty *chainedProperty) FullString() string {
 	result := thisProperty.name
 	for owner := thisProperty.owner; owner != nil; owner = owner.parent {
-		result = owner.name + "." + result
+		result = owner.name + " / " + result
 	}
 	return result
 }
