@@ -5,6 +5,8 @@ import (
 	"fmt"
 	"os"
 	"sort"
+
+	_ "github.com/tealeg/xlsx"
 )
 
 var debugMode bool
@@ -59,8 +61,10 @@ func main() {
 	})
 
 	// merging all the maps to determine the common definition
-	// commonDef := merge(fileMaps)
-	merge(fileMaps)
+	commonDef := merge(fileMaps)
+
+	// computing the common definition data tree height
+	debug("Common definition height is %d", commonDef.getHeight())
 }
 
 // fatal error handling

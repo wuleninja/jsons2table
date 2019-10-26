@@ -21,6 +21,7 @@ type fileMap struct {
 	originalContent   map[string]interface{}      // the raw info within this mal
 	chainedProperties map[string]*chainedProperty // the properties kept as chained values
 	propertyIndexes   map[string]int              // the index of each property in this map
+	height            int                         // this data tree's height
 }
 
 // UnmarshalJSON : keeping the properties' order
@@ -92,4 +93,28 @@ func showValue(thisMap *fileMap, propertyName string) interface{} {
 // showing the kind for a property of the given built file map
 func showKind(thisMap *fileMap, propertyName string) interface{} {
 	return thisMap.chainedProperties[propertyName].kind
+}
+
+// getting this map's height
+func (thisMap *fileMap) getHeight() int {
+
+	// we already know, let's return
+	if thisMap.height > 0 {
+		return thisMap.height
+	}
+
+	// nothing under this, so the height is 1
+	if len(thisMap.subMaps) == 0 {
+		thisMap.height = 1
+
+	} else { // this is 1 + the max height under this
+		for _, subMap := range thisMap.subMaps {
+			if newHeight := subMap.getHeight(); newHeight > thisMap.height {
+				thisMap.height = newHeight
+			}
+		}
+		thisMap.height = 1 + thisMap.height
+	}
+
+	return thisMap.height
 }
