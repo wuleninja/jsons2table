@@ -8,6 +8,7 @@ Serialise multiple same-format JSON files to a CSV and / or EXCEL file.
 - [Content](#content)
 - [Principles](#principles)
 - [Installation](#installation)
+- [License](#license)
 
 <!-- /TOC -->
 
@@ -37,3 +38,10 @@ creates, within the given folder:
 - `go get -u github.com/ninjawule/jsons2table`
 
 [Top](#content)
+
+---
+## License
+
+This program is under the terms of the [MIT License](LICENSE).
+
+It uses code from [tealeg/xlsx](https://github.com/tealeg/xlsx), which is [BSD 3-Clause](https://github.com/tealeg/xlsx/blob/master/LICENSE)-licensed.
