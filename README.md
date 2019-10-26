@@ -39,6 +39,7 @@ creates, within the given folder:
 
 - make sure you have `Go` installed and working
 - `go get -u github.com/ninjawule/jsons2table`
+- run `jsons2table -h` to check this program usage
 
 [Top](#content)
 
