@@ -1,5 +1,8 @@
 # jsons2table
-Serialise multiple same-format JSON files to a CSV and / or EXCEL file.
+
+Serialise multiple JSON files to an EXCEL and CSV file.
+
+In order for this to work, the JSON files must have the same structure, for the most part. Slight differences are allowed though.
 
 ## Content
 
@@ -45,3 +48,5 @@ creates, within the given folder:
 This program is under the terms of the [MIT License](LICENSE).
 
 It uses code from [tealeg/xlsx](https://github.com/tealeg/xlsx), which is [BSD 3-Clause](https://github.com/tealeg/xlsx/blob/master/LICENSE)-licensed.
+
+[Top](#content)
