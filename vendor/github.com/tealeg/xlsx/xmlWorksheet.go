@@ -10,20 +10,20 @@ import (
 // currently I have not checked it for completeness - it does as much
 // as I need.
 type xlsxWorksheet struct {
-	XMLName         xml.Name             `xml:"http://schemas.openxmlformats.org/spreadsheetml/2006/main worksheet"`
-	SheetPr         xlsxSheetPr          `xml:"sheetPr"`
-	Dimension       xlsxDimension        `xml:"dimension"`
-	SheetViews      xlsxSheetViews       `xml:"sheetViews"`
-	SheetFormatPr   xlsxSheetFormatPr    `xml:"sheetFormatPr"`
-	Cols            *xlsxCols            `xml:"cols,omitempty"`
-	SheetData       xlsxSheetData        `xml:"sheetData"`
-	DataValidations *xlsxDataValidations `xml:"dataValidations"`
-	AutoFilter      *xlsxAutoFilter      `xml:"autoFilter,omitempty"`
-	MergeCells      *xlsxMergeCells      `xml:"mergeCells,omitempty"`
-	PrintOptions    xlsxPrintOptions     `xml:"printOptions"`
-	PageMargins     xlsxPageMargins      `xml:"pageMargins"`
-	PageSetUp       xlsxPageSetUp        `xml:"pageSetup"`
-	HeaderFooter    xlsxHeaderFooter     `xml:"headerFooter"`
+	XMLName         xml.Name                 `xml:"http://schemas.openxmlformats.org/spreadsheetml/2006/main worksheet"`
+	SheetPr         xlsxSheetPr              `xml:"sheetPr"`
+	Dimension       xlsxDimension            `xml:"dimension"`
+	SheetViews      xlsxSheetViews           `xml:"sheetViews"`
+	SheetFormatPr   xlsxSheetFormatPr        `xml:"sheetFormatPr"`
+	Cols            *xlsxCols                `xml:"cols,omitempty"`
+	SheetData       xlsxSheetData            `xml:"sheetData"`
+	DataValidations *xlsxCellDataValidations `xml:"dataValidations"`
+	AutoFilter      *xlsxAutoFilter          `xml:"autoFilter,omitempty"`
+	MergeCells      *xlsxMergeCells          `xml:"mergeCells,omitempty"`
+	PrintOptions    xlsxPrintOptions         `xml:"printOptions"`
+	PageMargins     xlsxPageMargins          `xml:"pageMargins"`
+	PageSetUp       xlsxPageSetUp            `xml:"pageSetup"`
+	HeaderFooter    xlsxHeaderFooter         `xml:"headerFooter"`
 }
 
 // xlsxHeaderFooter directly maps the headerFooter element in the namespace
@@ -205,8 +205,6 @@ type xlsxCol struct {
 	Width        float64 `xml:"width,attr"`
 	CustomWidth  bool    `xml:"customWidth,attr,omitempty"`
 	OutlineLevel uint8   `xml:"outlineLevel,attr,omitempty"`
-	BestFit      bool    `xml:"bestFit,attr,omitempty"`
-	Phonetic     bool    `xml:"phonetic,attr,omitempty"`
 }
 
 // xlsxDimension directly maps the dimension element in the namespace
@@ -226,16 +224,16 @@ type xlsxSheetData struct {
 	Row     []xlsxRow `xml:"row"`
 }
 
-// xlsxDataValidations  excel cell data validation
-type xlsxDataValidations struct {
-	DataValidation []*xlsxDataValidation `xml:"dataValidation"`
-	Count          int                   `xml:"count,attr"`
+// xlsxCellDataValidations  excel cell data validation
+type xlsxCellDataValidations struct {
+	DataValidation []*xlsxCellDataValidation `xml:"dataValidation"`
+	Count          int                       `xml:"count,attr"`
 }
 
-// xlsxDataValidation
+// xlsxCellDataValidation
 // A single item of data validation defined on a range of the worksheet.
 // The list validation type would more commonly be called "a drop down box."
-type xlsxDataValidation struct {
+type xlsxCellDataValidation struct {
 	// A boolean value indicating whether the data validation allows the use of empty or blank
 	//entries. 1 means empty entries are OK and do not violate the validation constraints.
 	AllowBlank bool `xml:"allowBlank,attr,omitempty"`
@@ -274,6 +272,11 @@ type xlsxDataValidation struct {
 	// The second formula in the DataValidation dropdown. It is used as a bounds for 'between' and
 	// 'notBetween' relational operators only.
 	Formula2 string `xml:"formula2,omitempty"`
+	// minRow and maxRow are zero indexed
+	minRow int //`xml:"-"`
+	maxRow int //`xml:"-"`
+	//minCol         int     `xml:"-"` //spare
+	//maxCol         int     `xml:"-"` //spare
 }
 
 // xlsxRow directly maps the row element in the namespace
@@ -299,18 +302,9 @@ type xlsxMergeCell struct {
 }
 
 type xlsxMergeCells struct {
-	XMLName  xml.Name        //`xml:"mergeCells,omitempty"`
-	Count    int             `xml:"count,attr,omitempty"`
-	Cells    []xlsxMergeCell `xml:"mergeCell,omitempty"`
-	CellsMap map[string]xlsxMergeCell
-}
-
-func (mc *xlsxMergeCells) addCell(cell xlsxMergeCell) {
-	if mc.CellsMap == nil {
-		mc.CellsMap = make(map[string]xlsxMergeCell)
-	}
-	cellRefs := strings.Split(cell.Ref, ":")
-	mc.CellsMap[cellRefs[0]] = cell
+	XMLName xml.Name //`xml:"mergeCells,omitempty"`
+	Count   int             `xml:"count,attr,omitempty"`
+	Cells   []xlsxMergeCell `xml:"mergeCell,omitempty"`
 }
 
 // Return the cartesian extent of a merged cell range from its origin
@@ -319,17 +313,19 @@ func (mc *xlsxMergeCells) getExtent(cellRef string) (int, int, error) {
 	if mc == nil {
 		return 0, 0, nil
 	}
-	if cell, ok := mc.CellsMap[cellRef]; ok {
-		parts := strings.Split(cell.Ref, ":")
-		startx, starty, err := GetCoordsFromCellIDString(parts[0])
-		if err != nil {
-			return -1, -1, err
+	for _, cell := range mc.Cells {
+		if strings.HasPrefix(cell.Ref, cellRef+cellRangeChar) {
+			parts := strings.Split(cell.Ref, cellRangeChar)
+			startx, starty, err := GetCoordsFromCellIDString(parts[0])
+			if err != nil {
+				return -1, -1, err
+			}
+			endx, endy, err := GetCoordsFromCellIDString(parts[1])
+			if err != nil {
+				return -2, -2, err
+			}
+			return endx - startx, endy - starty, nil
 		}
-		endx, endy, err := GetCoordsFromCellIDString(parts[1])
-		if err != nil {
-			return -2, -2, err
-		}
-		return endx - startx, endy - starty, nil
 	}
 	return 0, 0, nil
 }
@@ -423,15 +419,4 @@ func newXlsxWorksheet() (worksheet *xlsxWorksheet) {
 	worksheet.HeaderFooter.OddFooter[0] = xlsxOddFooter{Content: `&C&"Times New Roman,Regular"&12Page &P`}
 
 	return
-}
-
-// setup the CellsMap so that we can rapidly calculate extents
-func (worksheet *xlsxWorksheet) mapMergeCells() {
-
-	if worksheet.MergeCells != nil {
-		for _, cell := range worksheet.MergeCells.Cells {
-			worksheet.MergeCells.addCell(cell)
-		}
-	}
-
 }

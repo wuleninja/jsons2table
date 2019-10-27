@@ -66,7 +66,7 @@ type Cell struct {
 	HMerge         int
 	VMerge         int
 	cellType       CellType
-	DataValidation *xlsxDataValidation
+	DataValidation *xlsxCellDataValidation
 }
 
 // CellInterface defines the public API of the Cell.
@@ -249,16 +249,16 @@ func (c *Cell) SetValue(n interface{}) {
 		c.SetDateTime(t)
 		return
 	case int, int8, int16, int32, int64:
-		c.SetNumeric(fmt.Sprintf("%d", n))
+		c.setNumeric(fmt.Sprintf("%d", n))
 	case float64:
 		// When formatting floats, do not use fmt.Sprintf("%v", n), this will cause numbers below 1e-4 to be printed in
 		// scientific notation. Scientific notation is not a valid way to store numbers in XML.
 		// Also not not use fmt.Sprintf("%f", n), this will cause numbers to be stored as X.XXXXXX. Which means that
 		// numbers will lose precision and numbers with fewer significant digits such as 0 will be stored as 0.000000
 		// which causes tests to fail.
-		c.SetNumeric(strconv.FormatFloat(t, 'f', -1, 64))
+		c.setNumeric(strconv.FormatFloat(t, 'f', -1, 64))
 	case float32:
-		c.SetNumeric(strconv.FormatFloat(float64(t), 'f', -1, 32))
+		c.setNumeric(strconv.FormatFloat(float64(t), 'f', -1, 32))
 	case string:
 		c.SetString(t)
 	case []byte:
@@ -270,8 +270,8 @@ func (c *Cell) SetValue(n interface{}) {
 	}
 }
 
-// SetNumeric sets a cell's value to a number
-func (c *Cell) SetNumeric(s string) {
+// setNumeric sets a cell's value to a number
+func (c *Cell) setNumeric(s string) {
 	c.Value = s
 	c.NumFmt = builtInNumFmt[builtInNumFmtIndex_GENERAL]
 	c.formula = ""
@@ -388,31 +388,31 @@ func (c *Cell) FormattedValue() (string, error) {
 }
 
 // SetDataValidation set data validation
-func (c *Cell) SetDataValidation(dd *xlsxDataValidation) {
+func (c *Cell) SetDataValidation(dd *xlsxCellDataValidation) {
 	c.DataValidation = dd
 }
 
-// StreamingCellMetadata represents anything attributable to a cell
+// CellMetadata represents anything attributable to a cell
 // except for the cell data itself. For example, it is used
 // in StreamFileBuilder.AddSheetWithDefaultColumnMetadata to
 // associate default attributes for cells in a particular column
-type StreamingCellMetadata struct {
+type CellMetadata struct {
 	cellType    CellType
 	streamStyle StreamStyle
 }
 
 var (
-	DefaultStringStreamingCellMetadata  StreamingCellMetadata
-	DefaultNumericStreamingCellMetadata StreamingCellMetadata
-	DefaultDecimalStreamingCellMetadata StreamingCellMetadata
-	DefaultIntegerStreamingCellMetadata StreamingCellMetadata
-	DefaultDateStreamingCellMetadata    StreamingCellMetadata
+	DefaultStringCellMetadata  CellMetadata
+	DefaultNumericCellMetadata CellMetadata
+	DefaultDecimalCellMetadata CellMetadata
+	DefaultIntegerCellMetadata CellMetadata
+	DefaultDateCellMetadata    CellMetadata
 )
 
-func MakeStreamingCellMetadata(cellType CellType, streamStyle StreamStyle) StreamingCellMetadata {
-	return StreamingCellMetadata{cellType, streamStyle}
+func MakeCellMetadata(cellType CellType, streamStyle StreamStyle) CellMetadata {
+	return CellMetadata{cellType, streamStyle}
 }
 
-func (cm StreamingCellMetadata) Ptr() *StreamingCellMetadata {
+func (cm CellMetadata) Ptr() *CellMetadata {
 	return &cm
 }

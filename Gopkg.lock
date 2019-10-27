@@ -2,12 +2,12 @@
 
 
 [[projects]]
-  branch = "master"
-  digest = "1:f55dc4709c203dd73ca3f0b61ddc04892f6e2789c420fb2cc246f5aee1a29b17"
+  digest = "1:7f60bb033c03f8322869de36b3a063080593d22037c5a117007553441645adaa"
   name = "github.com/tealeg/xlsx"
   packages = ["."]
   pruneopts = "UT"
-  revision = "4399f728635c63b98c393811e2c91f4f0f1a5b1b"
+  revision = "1b556911422e5b0f499a31ddc028ccc5ad288d4c"
+  version = "v1.0.5"
 
 [solve-meta]
   analyzer-name = "dep"

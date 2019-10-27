@@ -103,7 +103,7 @@ type xlsxStyleSheet struct {
 
 	theme *theme
 
-	sync.RWMutex      // protects the following
+	sync.RWMutex // protects the following
 	styleCache        map[int]*Style
 	numFmtRefTable    map[int]xlsxNumFmt
 	parsedNumFmtTable map[string]*parsedNumberFormat
@@ -130,75 +130,11 @@ func (styles *xlsxStyleSheet) reset() {
 			Bottom: xlsxLine{Style: "none"},
 		})
 
-	// add 0th CellStyleXf by default, as required by the standard
-	styles.CellStyleXfs = &xlsxCellStyleXfs{Count: 1, Xf: []xlsxXf{{}}}
+	styles.CellStyleXfs = &xlsxCellStyleXfs{}
 
-	// add 0th CellXf by default, as required by the standard
+	// add default xf
 	styles.CellXfs = xlsxCellXfs{Count: 1, Xf: []xlsxXf{{}}}
 	styles.NumFmts = xlsxNumFmts{}
-}
-
-//
-func (styles *xlsxStyleSheet) populateStyleFromXf(style *Style, xf xlsxXf) {
-	style.ApplyBorder = xf.ApplyBorder
-	style.ApplyFill = xf.ApplyFill
-	style.ApplyFont = xf.ApplyFont
-	style.ApplyAlignment = xf.ApplyAlignment
-
-	if xf.BorderId > -1 && xf.BorderId < styles.Borders.Count {
-		var border xlsxBorder
-		border = styles.Borders.Border[xf.BorderId]
-		style.Border.Left = border.Left.Style
-		style.Border.LeftColor = border.Left.Color.RGB
-		style.Border.Right = border.Right.Style
-		style.Border.RightColor = border.Right.Color.RGB
-		style.Border.Top = border.Top.Style
-		style.Border.TopColor = border.Top.Color.RGB
-		style.Border.Bottom = border.Bottom.Style
-		style.Border.BottomColor = border.Bottom.Color.RGB
-	}
-
-	if xf.FillId > -1 && xf.FillId < styles.Fills.Count {
-		xFill := styles.Fills.Fill[xf.FillId]
-		style.Fill.PatternType = xFill.PatternFill.PatternType
-		style.Fill.FgColor = styles.argbValue(xFill.PatternFill.FgColor)
-		style.Fill.BgColor = styles.argbValue(xFill.PatternFill.BgColor)
-	}
-
-	if xf.FontId > -1 && xf.FontId < styles.Fonts.Count {
-		xfont := styles.Fonts.Font[xf.FontId]
-		style.Font.Size, _ = strconv.Atoi(xfont.Sz.Val)
-		style.Font.Name = xfont.Name.Val
-		style.Font.Family, _ = strconv.Atoi(xfont.Family.Val)
-		style.Font.Charset, _ = strconv.Atoi(xfont.Charset.Val)
-		style.Font.Color = styles.argbValue(xfont.Color)
-
-		if bold := xfont.B; bold != nil && bold.Val != "0" {
-			style.Font.Bold = true
-		}
-		if italic := xfont.I; italic != nil && italic.Val != "0" {
-			style.Font.Italic = true
-		}
-		if underline := xfont.U; underline != nil && underline.Val != "0" {
-			style.Font.Underline = true
-		}
-	}
-	if xf.Alignment.Horizontal != "" {
-		style.Alignment.Horizontal = xf.Alignment.Horizontal
-	}
-
-	if xf.Alignment.Vertical != "" {
-		style.Alignment.Vertical = xf.Alignment.Vertical
-	}
-
-	style.Alignment.ShrinkToFit = xf.Alignment.ShrinkToFit
-	style.Alignment.WrapText = xf.Alignment.WrapText
-	style.Alignment.TextRotation = xf.Alignment.TextRotation
-
-	if xf.Alignment.Indent != 0 {
-		style.Alignment.Indent = xf.Alignment.Indent
-	}
-
 }
 
 func (styles *xlsxStyleSheet) getStyle(styleIndex int) *Style {
@@ -209,20 +145,73 @@ func (styles *xlsxStyleSheet) getStyle(styleIndex int) *Style {
 		return style
 	}
 
-	style = &Style{}
+	style = new(Style)
+
+	var namedStyleXf xlsxXf
 
 	xfCount := styles.CellXfs.Count
-	if styleIndex > -1 && xfCount > 0 && styleIndex < xfCount {
+	if styleIndex > -1 && xfCount > 0 && styleIndex <= xfCount {
 		xf := styles.CellXfs.Xf[styleIndex]
-		styles.populateStyleFromXf(style, xf)
-		if xf.XfId != nil && styles.CellStyleXfs != nil && *xf.XfId < len(styles.CellStyleXfs.Xf) {
+
+		if xf.XfId != nil && styles.CellStyleXfs != nil {
+			namedStyleXf = styles.CellStyleXfs.Xf[*xf.XfId]
 			style.NamedStyleIndex = xf.XfId
-			namedStyleXf := styles.CellStyleXfs.Xf[*xf.XfId]
-			style.ApplyBorder = style.ApplyBorder || namedStyleXf.ApplyBorder
-			style.ApplyFill = style.ApplyFill || namedStyleXf.ApplyFill
-			style.ApplyFont = style.ApplyFont || namedStyleXf.ApplyFont
-			style.ApplyAlignment = style.ApplyAlignment || namedStyleXf.ApplyAlignment
+		} else {
+			namedStyleXf = xlsxXf{}
 		}
+
+		style.ApplyBorder = xf.ApplyBorder || namedStyleXf.ApplyBorder
+		style.ApplyFill = xf.ApplyFill || namedStyleXf.ApplyFill
+		style.ApplyFont = xf.ApplyFont || namedStyleXf.ApplyFont
+		style.ApplyAlignment = xf.ApplyAlignment || namedStyleXf.ApplyAlignment
+
+		if xf.BorderId > -1 && xf.BorderId < styles.Borders.Count {
+			var border xlsxBorder
+			border = styles.Borders.Border[xf.BorderId]
+			style.Border.Left = border.Left.Style
+			style.Border.LeftColor = border.Left.Color.RGB
+			style.Border.Right = border.Right.Style
+			style.Border.RightColor = border.Right.Color.RGB
+			style.Border.Top = border.Top.Style
+			style.Border.TopColor = border.Top.Color.RGB
+			style.Border.Bottom = border.Bottom.Style
+			style.Border.BottomColor = border.Bottom.Color.RGB
+		}
+
+		if xf.FillId > -1 && xf.FillId < styles.Fills.Count {
+			xFill := styles.Fills.Fill[xf.FillId]
+			style.Fill.PatternType = xFill.PatternFill.PatternType
+			style.Fill.FgColor = styles.argbValue(xFill.PatternFill.FgColor)
+			style.Fill.BgColor = styles.argbValue(xFill.PatternFill.BgColor)
+		}
+
+		if xf.FontId > -1 && xf.FontId < styles.Fonts.Count {
+			xfont := styles.Fonts.Font[xf.FontId]
+			style.Font.Size, _ = strconv.Atoi(xfont.Sz.Val)
+			style.Font.Name = xfont.Name.Val
+			style.Font.Family, _ = strconv.Atoi(xfont.Family.Val)
+			style.Font.Charset, _ = strconv.Atoi(xfont.Charset.Val)
+			style.Font.Color = styles.argbValue(xfont.Color)
+
+			if bold := xfont.B; bold != nil && bold.Val != "0" {
+				style.Font.Bold = true
+			}
+			if italic := xfont.I; italic != nil && italic.Val != "0" {
+				style.Font.Italic = true
+			}
+			if underline := xfont.U; underline != nil && underline.Val != "0" {
+				style.Font.Underline = true
+			}
+		}
+		if xf.Alignment.Horizontal != "" {
+			style.Alignment.Horizontal = xf.Alignment.Horizontal
+		}
+
+		if xf.Alignment.Vertical != "" {
+			style.Alignment.Vertical = xf.Alignment.Vertical
+		}
+		style.Alignment.WrapText = xf.Alignment.WrapText
+		style.Alignment.TextRotation = xf.Alignment.TextRotation
 
 		styles.Lock()
 		styles.styleCache[styleIndex] = style
@@ -242,17 +231,13 @@ func (styles *xlsxStyleSheet) argbValue(color xlsxColor) string {
 // have an id less than 164. This is a possibly incomplete list comprised of as
 // many of them as I could find.
 func getBuiltinNumberFormat(numFmtId int) string {
-	nmfmt, ok := builtInNumFmt[numFmtId]
-	if !ok {
-		return ""
-	}
-	return nmfmt
+	return builtInNumFmt[numFmtId]
 }
 
 func (styles *xlsxStyleSheet) getNumberFormat(styleIndex int) (string, *parsedNumberFormat) {
 	var numberFormat string = "general"
 	if styles.CellXfs.Xf != nil {
-		if styleIndex > -1 && styleIndex < styles.CellXfs.Count {
+		if styleIndex > -1 && styleIndex <= styles.CellXfs.Count {
 			xf := styles.CellXfs.Xf[styleIndex]
 			if builtin := getBuiltinNumberFormat(xf.NumFmtId); builtin != "" {
 				numberFormat = builtin
@@ -508,12 +493,6 @@ type xlsxFonts struct {
 	Font  []xlsxFont `xml:"font,omitempty"`
 }
 
-//
-func (fonts *xlsxFonts) addFont(font xlsxFont) {
-	fonts.Font = append(fonts.Font, font)
-	fonts.Count++
-}
-
 func (fonts *xlsxFonts) Marshal(outputFontMap map[int]int) (result string, err error) {
 	emittedCount := 0
 	subparts := ""
@@ -614,12 +593,6 @@ func (val *xlsxVal) Equals(other xlsxVal) bool {
 type xlsxFills struct {
 	Count int        `xml:"count,attr"`
 	Fill  []xlsxFill `xml:"fill,omitempty"`
-}
-
-//
-func (fills *xlsxFills) addFill(fill xlsxFill) {
-	fills.Fill = append(fills.Fill, fill)
-	fills.Count++
 }
 
 func (fills *xlsxFills) Marshal(outputFillMap map[int]int) (string, error) {
@@ -729,12 +702,6 @@ func (color *xlsxColor) Equals(other xlsxColor) bool {
 type xlsxBorders struct {
 	Count  int          `xml:"count,attr"`
 	Border []xlsxBorder `xml:"border"`
-}
-
-//
-func (borders *xlsxBorders) addBorder(border xlsxBorder) {
-	borders.Border = append(borders.Border, border)
-	borders.Count++
 }
 
 func (borders *xlsxBorders) Marshal(outputBorderMap map[int]int) (result string, err error) {
@@ -867,12 +834,6 @@ type xlsxCellStyleXfs struct {
 	Xf    []xlsxXf `xml:"xf,omitempty"`
 }
 
-//
-func (cellStyleXfs *xlsxCellStyleXfs) addXf(Xf xlsxXf) {
-	cellStyleXfs.Xf = append(cellStyleXfs.Xf, Xf)
-	cellStyleXfs.Count++
-}
-
 func (cellStyleXfs *xlsxCellStyleXfs) Marshal(outputBorderMap, outputFillMap, outputFontMap map[int]int) (result string, err error) {
 	if cellStyleXfs.Count > 0 {
 		result = fmt.Sprintf(`<cellStyleXfs count="%d">`, cellStyleXfs.Count)
@@ -896,11 +857,6 @@ func (cellStyleXfs *xlsxCellStyleXfs) Marshal(outputBorderMap, outputFillMap, ou
 type xlsxCellXfs struct {
 	Count int      `xml:"count,attr"`
 	Xf    []xlsxXf `xml:"xf,omitempty"`
-}
-
-func (cellXfs *xlsxCellXfs) addXf(Xf xlsxXf) {
-	cellXfs.Xf = append(cellXfs.Xf, Xf)
-	cellXfs.Count++
 }
 
 func (cellXfs *xlsxCellXfs) Marshal(outputBorderMap, outputFillMap, outputFontMap map[int]int) (result string, err error) {
