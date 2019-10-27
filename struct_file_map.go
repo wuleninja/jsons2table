@@ -22,6 +22,7 @@ type fileMap struct {
 	chainedProperties map[string]*chainedProperty // the properties kept as chained values
 	propertyIndexes   map[string]int              // the index of each property in this map
 	height            int                         // this data tree's height
+	depth             int                         // this data tree's depth
 }
 
 // UnmarshalJSON : keeping the properties' order
@@ -117,4 +118,32 @@ func (thisMap *fileMap) getHeight() int {
 	}
 
 	return thisMap.height
+}
+
+// getting this map's depth
+func (thisMap *fileMap) getDepth() int {
+
+	// we already know, let's return
+	if thisMap.depth > 0 {
+		return thisMap.depth
+	}
+
+	// nothing over this, so the depth is 1
+	if thisMap.parent == nil {
+		thisMap.depth = 1
+
+	} else { // this is 1 + the max height under this
+		thisMap.depth = 1 + thisMap.parent.getDepth()
+	}
+
+	return thisMap.depth
+}
+
+// getting the full name
+func (thisMap *fileMap) getFullName() string {
+	result := thisMap.name
+	for parent := thisMap.parent; parent != nil; parent = parent.parent {
+		result = parent.name + " / " + result
+	}
+	return result
 }

@@ -30,7 +30,7 @@ func main() {
 	}
 
 	// adding the flags
-	flag.BoolVar(&debugMode, "debug", false, "runs the program in debug mode with debug messages")
+	flag.BoolVar(&debugMode, "debug", false, "runs the program in debug mode, i.e. with debug messages")
 	flag.Parse()
 
 	// controlling the args
@@ -45,26 +45,30 @@ func main() {
 
 	// getting the folder path, which should be a valid directory
 	folderPath := flag.Arg(0)
-	if _, errPath := os.Stat(folderPath); os.IsNotExist(errPath) {
+	folderInfo, errPath := os.Stat(folderPath)
+	if os.IsNotExist(errPath) {
 		err("'%s' is not a valid directory!", folderPath)
 	}
 
 	// scanning all the files within the JSON folder
-	fileMaps, errScan := scanDir(folderPath)
+	jsonMaps, errScan := scanDir(folderPath)
 	if errScan != nil {
 		err("error while scanning: %s", errScan)
 	}
 
 	// a bit of sorting, to make sure the treatment is always the same
-	sort.Slice(fileMaps, func(i int, j int) bool {
-		return fileMaps[i].name < fileMaps[j].name
+	sort.Slice(jsonMaps, func(i int, j int) bool {
+		return jsonMaps[i].name < jsonMaps[j].name
 	})
 
 	// merging all the maps to determine the common definition
-	commonDef := merge(fileMaps)
+	commonDef := merge(jsonMaps)
 
 	// computing the common definition data tree height
 	debug("Common definition height is %d", commonDef.getHeight())
+
+	// writing the Excel file
+	commonDef.writeExcel(folderPath, folderInfo, jsonMaps)
 }
 
 // fatal error handling

@@ -48,6 +48,6 @@ creates, within the given folder:
 
 This program is under the terms of the [MIT License](LICENSE).
 
-It uses code from [tealeg/xlsx](https://github.com/tealeg/xlsx), which is [BSD 3-Clause](https://github.com/tealeg/xlsx/blob/master/LICENSE)-licensed.
+It uses code from [excelize](https://github.com/360EntSecGroup-Skylar/excelize), which is [BSD 3-Clause](https://github.com/360EntSecGroup-Skylar/excelize/blob/master/LICENSE)-licensed.
 
 [Top](#content)

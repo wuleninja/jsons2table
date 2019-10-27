@@ -10,10 +10,12 @@ import "reflect"
 type chainedProperty struct {
 	owner    *fileMap
 	name     string
+	fullName string // i.e. with the path to this property when it's nested
 	kind     reflect.Kind
 	previous *chainedProperty
 	next     *chainedProperty
 	addOn    bool // when a new property is inserted in an already existing common definition
+	index    int  // the global index for this property within the common definition
 }
 
 func (thisProperty *chainedProperty) String() string {
@@ -23,12 +25,15 @@ func (thisProperty *chainedProperty) String() string {
 	return thisProperty.name
 }
 
-func (thisProperty *chainedProperty) FullString() string {
-	result := thisProperty.name
-	for owner := thisProperty.owner; owner != nil; owner = owner.parent {
-		result = owner.name + " / " + result
+func (thisProperty *chainedProperty) getFullName() string {
+	if thisProperty.fullName != "" {
+		return thisProperty.fullName
 	}
-	return result
+	thisProperty.fullName = thisProperty.name
+	for owner := thisProperty.owner; owner != nil; owner = owner.parent {
+		thisProperty.fullName = owner.name + " / " + thisProperty.fullName
+	}
+	return thisProperty.fullName
 }
 
 // chaining this property right after the given targeted property

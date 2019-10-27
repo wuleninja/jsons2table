@@ -36,6 +36,10 @@ func merge(jsonMaps []*fileMap) *fileMap {
 		commonDef.control(jsonMap)
 	}
 
+	// computing the index for each final property contained within the definition
+	currentIndex := 1
+	commonDef.index(&currentIndex)
+
 	// retunring, for what's next, i.e. using this common definition to create tables
 	return commonDef
 }
@@ -94,8 +98,8 @@ func (commonDef *fileMap) digest(jsonMap *fileMap) *fileMap {
 						"\ntype of '%s' is %s,"+
 						"\nbut type of '%s' is %s",
 						propertyName,
-						existingProperty.FullString(), existingProperty.kind,
-						jsonMap.chainedProperties[propertyName].FullString(), jsonMap.getPropertyKind(propertyName),
+						existingProperty.getFullName(), existingProperty.kind,
+						jsonMap.chainedProperties[propertyName].getFullName(), jsonMap.getPropertyKind(propertyName),
 					)
 				}
 			}
@@ -149,7 +153,7 @@ func (commonDef *fileMap) control(jsonMap *fileMap) {
 			err("\nThere's a problem here: "+
 				"\nwe have '%s' before '%s'"+
 				"\nbut the order is inversed in the common definition!",
-				property.FullString(), previous.FullString(),
+				property.getFullName(), previous.getFullName(),
 			)
 		}
 	}
@@ -157,5 +161,17 @@ func (commonDef *fileMap) control(jsonMap *fileMap) {
 	// dealing with the submaps
 	for _, submap := range jsonMap.subMaps {
 		commonDef.subMaps[submap.name].control(submap)
+	}
+}
+
+// global-indexing each final properties, which will also correspond to a column number in the forecoming Excel file
+func (commonDef *fileMap) index(currentIndex *int) {
+	for _, property := range commonDef.orderedProperties {
+		if subMap := commonDef.subMaps[property]; subMap != nil {
+			subMap.index(currentIndex)
+		} else {
+			commonDef.chainedProperties[property].index = *currentIndex
+			*currentIndex = *currentIndex + 1
+		}
 	}
 }
