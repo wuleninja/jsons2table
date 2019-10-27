@@ -7,6 +7,7 @@ package main
 
 import (
 	"fmt"
+	"math"
 	"os"
 	"reflect"
 
@@ -35,7 +36,12 @@ func (commonDef *fileMap) writeExcel(folderPath string, folderInfo os.FileInfo, 
 		err("could not write the content. Cause: %s", errContent)
 	}
 
-	// savinf the file
+	// styling
+	if errStyle := commonDef.style(excelFile); errStyle != nil {
+		err("could not style the sheet. Cause: %s", errStyle)
+	}
+
+	// saving the file
 	excelFileName := fmt.Sprintf("%s/%s.xlsx", folderPath, folderInfo.Name())
 	errSave := excelFile.SaveAs(excelFileName)
 	if errSave != nil {
@@ -59,13 +65,46 @@ func (commonDef *fileMap) writeHeaders(excelFile *excel.File, headerLine int) er
 	for _, property := range commonDef.orderedProperties {
 
 		if subMap := commonDef.subMaps[property]; subMap != nil {
+
+			// writing the name for this section
+			setString(excelFile, subMap.getDepth()-1, subMap.getFirstIndex(), subMap.name)
+
+			// merging the whole section
+			excelFile.MergeCell(mainSheetName,
+				getCell(subMap.getDepth()-1, subMap.getFirstIndex()),
+				getCell(subMap.getDepth()-1, subMap.getLastIndex()))
+
+			// dealing with what's below
 			if errWrite := subMap.writeHeaders(excelFile, headerLine); errWrite != nil {
 				return errWrite
 			}
+
 		} else {
+
+			// retrieving the right property
 			prop := commonDef.chainedProperties[property]
 			debug("dealing with property n°%d = %s", prop.index, prop.getFullName())
-			setString(excelFile, headerLine, prop.index, property)
+
+			// writing it
+			setString(excelFile, prop.owner.getDepth(), prop.index, property)
+
+			// merging till the header line
+			excelFile.MergeCell(mainSheetName,
+				getCell(prop.owner.getDepth(), prop.index),
+				getCell(headerLine, prop.index))
+
+			// adjusting the column size
+			column, errCol := excel.ColumnNumberToName(prop.index)
+			if errCol != nil {
+				return errCol
+			}
+			columnSize := math.Ceil(float64(len(property)) * 1.15)
+			if columnSize < 8 {
+				columnSize = 8
+			}
+			if errWidth := excelFile.SetColWidth(mainSheetName, column, column, columnSize); errWidth != nil {
+				return errWidth
+			}
 		}
 	}
 
@@ -129,41 +168,20 @@ func (commonDef *fileMap) writeLine(excelFile *excel.File, jsonMap *fileMap, hea
 	return nil
 }
 
-// getting the cell for the given row and col
-func getCell(row int, col int) string {
-	coord, errCoord := excel.CoordinatesToCellName(col, row)
-	if errCoord != nil {
-		err("cound not get coordinates at row '%s' and column '%s'. Cause: %s", row, col, errCoord)
-	}
-	return coord
-}
+// apply a basic style on the Excel file
+func (commonDef *fileMap) style(excelFile *excel.File) error {
 
-// getting a string value from the main sheet
-func getString(excelFile *excel.File, row int, col int) string {
-	value, errGet := excelFile.GetCellValue(mainSheetName, getCell(row, col))
-	if errGet != nil {
-		err("error while getting at row %d and column %d", row, col)
+	// dealing with the alignment
+	style, errNewStyle := excelFile.NewStyle(`{"alignment":{"horizontal":"center"}}`)
+	if errNewStyle != nil {
+		return errNewStyle
 	}
-	return value
-}
+	if errSet := excelFile.SetCellStyle(mainSheetName, "A1", getCell(commonDef.getHeight()-1, commonDef.getLastIndex()), style); errSet != nil {
+		return errSet
+	}
 
-// setting a bool value into the main sheet
-func setBool(excelFile *excel.File, row int, col int, value bool) {
-	if errSet := excelFile.SetCellBool(mainSheetName, getCell(row, col), value); errSet != nil {
-		err("error while setting value '%v' at row %d and column %d", value, row, col)
-	}
-}
+	// dealing with the frozen panes
+	excelFile.SetPanes(mainSheetName, fmt.Sprintf(`{"freeze":true,"split":true,"x_split":1,"y_split":%d}`, commonDef.getHeight()))
 
-// setting a string value into the main sheet
-func setString(excelFile *excel.File, row int, col int, value string) {
-	if errSet := excelFile.SetCellStr(mainSheetName, getCell(row, col), value); errSet != nil {
-		err("error while setting value '%v' at row %d and column %d", value, row, col)
-	}
-}
-
-// setting a float value into the main sheet
-func setFloat(excelFile *excel.File, row int, col int, value float64) {
-	if errSet := excelFile.SetCellFloat(mainSheetName, getCell(row, col), value, -1, 64); errSet != nil {
-		err("error while setting value '%v' at row %d and column %d", value, row, col)
-	}
+	return nil
 }

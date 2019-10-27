@@ -147,3 +147,21 @@ func (thisMap *fileMap) getFullName() string {
 	}
 	return result
 }
+
+// getting the first index for this file map
+func (thisMap *fileMap) getFirstIndex() int {
+	firstProperty := thisMap.orderedProperties[0]
+	if subMap := thisMap.subMaps[firstProperty]; subMap != nil {
+		return subMap.getFirstIndex()
+	}
+	return thisMap.chainedProperties[firstProperty].index
+}
+
+// getting the last index for this file map
+func (thisMap *fileMap) getLastIndex() int {
+	lastProperty := thisMap.orderedProperties[len(thisMap.orderedProperties)-1]
+	if subMap := thisMap.subMaps[lastProperty]; subMap != nil {
+		return subMap.getLastIndex()
+	}
+	return thisMap.chainedProperties[lastProperty].index
+}
