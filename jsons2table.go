@@ -10,6 +10,7 @@ import (
 )
 
 var debugMode bool
+var continueMode bool
 
 func debug(strfmt string, params ...interface{}) {
 	if debugMode {
@@ -31,6 +32,7 @@ func main() {
 
 	// adding the flags
 	flag.BoolVar(&debugMode, "debug", false, "runs the program in debug mode, i.e. with debug messages")
+	flag.BoolVar(&continueMode, "continue", false, "runs the program without stopping at the merging step")
 	flag.Parse()
 
 	// controlling the args
@@ -67,8 +69,11 @@ func main() {
 	// computing the common definition data tree height
 	debug("Common definition height is %d", commonDef.getHeight())
 
+	// retrieving or initialising the config
+	config := commonDef.getOrInitConfig(folderPath, folderInfo)
+
 	// writing the Excel file
-	commonDef.writeExcel(folderPath, folderInfo, jsonMaps)
+	commonDef.writeExcel(config, jsonMaps)
 }
 
 // fatal error handling

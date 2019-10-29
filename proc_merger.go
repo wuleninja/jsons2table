@@ -5,6 +5,8 @@
 
 package main
 
+import "fmt"
+
 // digesting all the file maps, to build a common definition for them
 func merge(jsonMaps []*fileMap) *fileMap {
 
@@ -94,13 +96,17 @@ func (commonDef *fileMap) digest(jsonMap *fileMap) *fileMap {
 				// if the kind of the property from the definition, and the one from the file map differ,
 				// then we have a problem about a "common" definition
 				if existingProperty.kind != jsonMap.getPropertyKind(propertyName) {
-					err("\n\nWe have a problem here with property: %s"+
+					msg := fmt.Sprintf("\n\nWe have a problem here with property: %s"+
 						"\ntype of '%s' is %s,"+
 						"\nbut type of '%s' is %s",
 						propertyName,
 						existingProperty.getFullName(), existingProperty.kind,
-						jsonMap.chainedProperties[propertyName].getFullName(), jsonMap.getPropertyKind(propertyName),
-					)
+						jsonMap.chainedProperties[propertyName].getFullName(), jsonMap.getPropertyKind(propertyName))
+					if continueMode {
+						println(msg)
+					} else {
+						err(msg)
+					}
 				}
 			}
 		}

@@ -8,7 +8,6 @@ package main
 import (
 	"fmt"
 	"math"
-	"os"
 	"reflect"
 
 	excel "github.com/360EntSecGroup-Skylar/excelize"
@@ -19,7 +18,7 @@ const (
 )
 
 // writing the excel file
-func (commonDef *fileMap) writeExcel(folderPath string, folderInfo os.FileInfo, jsonMaps []*fileMap) error {
+func (commonDef *fileMap) writeExcel(conf *config, jsonMaps []*fileMap) error {
 
 	// creating the file and the main sheet
 	excelFile := excel.NewFile()
@@ -42,7 +41,7 @@ func (commonDef *fileMap) writeExcel(folderPath string, folderInfo os.FileInfo, 
 	}
 
 	// saving the file
-	excelFileName := fmt.Sprintf("%s/%s.xlsx", folderPath, folderInfo.Name())
+	excelFileName := fmt.Sprintf("%s/%s.xlsx", conf.folderPath, conf.folderInfo.Name())
 	errSave := excelFile.SaveAs(excelFileName)
 	if errSave != nil {
 		err("could not save file '%s'. Cause: %s", excelFileName, errSave)
@@ -182,6 +181,15 @@ func (commonDef *fileMap) style(excelFile *excel.File) error {
 
 	// dealing with the frozen panes
 	excelFile.SetPanes(mainSheetName, fmt.Sprintf(`{"freeze":true,"split":true,"x_split":1,"y_split":%d}`, commonDef.getHeight()))
+
+	// // some colors
+	// style2, errNewStyle2 := excelFile.NewStyle(`{"fill":{"type":"pattern","color":["#E0EBF5"],"pattern":1}}`)
+	// if errNewStyle2 != nil {
+	// 	return errNewStyle2
+	// }
+	// if errSet2 := excelFile.SetCellStyle(mainSheetName, "B2", "GL7", style2); errSet2 != nil {
+	// 	return errSet2
+	// }
 
 	return nil
 }
