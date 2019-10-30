@@ -9,7 +9,6 @@ import (
 	"fmt"
 	"math"
 	"reflect"
-	"strconv"
 
 	excel "github.com/360EntSecGroup-Skylar/excelize"
 )
@@ -167,7 +166,7 @@ func (commonDef *fileMap) writeLine(excelFile *excel.File, jsonMap *fileMap, hea
 				// oh, maybe we could do a bit of styling here
 				if even {
 					style, errNewStyle := excelFile.NewStyle(
-						fmt.Sprintf(`{"fill":{"type":"pattern","color":["%s"],"pattern":1}}`, getLightenedColor(commonProp.conf.background, 80)))
+						fmt.Sprintf(`{"fill":{"type":"pattern","color":["%s"],"pattern":1}}`, getAdjustedColor(commonProp.conf.background, 90)))
 					if errNewStyle != nil {
 						return errNewStyle
 					}
@@ -226,7 +225,7 @@ func (commonDef *fileMap) applyColor(excelFile *excel.File, confMap *configMap) 
 		// applying the style to the current property
 		style, errNewStyle := excelFile.NewStyle(
 			fmt.Sprintf(`{"fill":{"type":"pattern","color":["%s"],"pattern":1}, "font":{"color":"%s"}, "alignment":{"horizontal":"center"}}`,
-				confItem.background, confItem.foreground))
+				confItem.background, white))
 		if errNewStyle != nil {
 			return errNewStyle
 		}
@@ -236,63 +235,4 @@ func (commonDef *fileMap) applyColor(excelFile *excel.File, confMap *configMap) 
 	}
 
 	return nil
-}
-
-var colorLightened = map[string]string{}
-
-// lightening a color
-func getLightenedColor(color string, steps int64) string {
-
-	colorKey := fmt.Sprintf("%s/%d", color, steps)
-
-	if lightenedColor := colorLightened[colorKey]; lightenedColor != "" {
-		return lightenedColor
-	}
-
-	usePound := false
-
-	if color[0] == '#' {
-		color = color[1:len(color)]
-		usePound = true
-	}
-
-	R, _ := strconv.ParseInt(color[0:2], 16, 8)
-	G, _ := strconv.ParseInt(color[2:4], 16, 8)
-	B, _ := strconv.ParseInt(color[4:6], 16, 8)
-
-	R = R + steps
-	G = G + steps
-	B = B + steps
-
-	if R > 255 {
-		R = 255
-	} else if R < 0 {
-		R = 0
-	}
-
-	if G > 255 {
-		G = 255
-	} else if G < 0 {
-		G = 0
-	}
-
-	if B > 255 {
-		B = 255
-	} else if B < 0 {
-		B = 0
-	}
-
-	RR := fmt.Sprintf("%02s", fmt.Sprintf("%x", R))
-	GG := fmt.Sprintf("%02s", fmt.Sprintf("%x", G))
-	BB := fmt.Sprintf("%02s", fmt.Sprintf("%x", B))
-
-	result := RR + GG + BB
-	if usePound {
-		result = "#" + result
-	}
-
-	// "caching" for later faster retrieval
-	colorLightened[colorKey] = result
-
-	return result
 }
