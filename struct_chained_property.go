@@ -14,8 +14,9 @@ type chainedProperty struct {
 	kind     reflect.Kind
 	previous *chainedProperty
 	next     *chainedProperty
-	addOn    bool // when a new property is inserted in an already existing common definition
-	index    int  // the global index for this property within the common definition
+	addOn    bool        // when a new property is inserted in an already existing common definition
+	index    int         // the global index for this property within the common definition
+	conf     *configItem // the config associated with this property
 }
 
 func (thisProperty *chainedProperty) String() string {

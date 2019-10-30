@@ -19,7 +19,6 @@ type configMap struct {
 }
 
 type configItem struct {
-	foreground  string
-	background  string
-	bgroundType bgType
+	foreground string
+	background string
 }

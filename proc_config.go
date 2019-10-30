@@ -15,13 +15,13 @@ func (commonDef *fileMap) getOrInitConfig(folderPath string, folderInfo os.FileI
 	config := &config{
 		folderPath: folderPath,
 		folderInfo: folderInfo,
-		content:    commonDef.initConfigMap(),
+		content:    commonDef.initConfigMap(true),
 	}
 
 	return config
 }
 
-func (commonDef *fileMap) initConfigMap() *configMap {
+func (commonDef *fileMap) initConfigMap(isBlue bool) *configMap {
 
 	result := &configMap{
 		items:   map[string]*configItem{},
@@ -30,44 +30,54 @@ func (commonDef *fileMap) initConfigMap() *configMap {
 
 	for i, property := range commonDef.orderedProperties {
 
+		// are we even ?
+		thisEven := math.Mod(float64(i), 2) == 0
+
 		// about to "compute" foregound and background colors
 		var fg, bg string
-		var bgtype bgType
 
 		// dealing with the top level
-		if commonDef.getDepth() == 1 {
-			fg, bg, bgtype = getColorForLevel(1, math.Mod(float64(i), 0) == 0, false)
+		if commonDef.parent == nil {
+
+			if commonDef.getHeight() > 1 {
+				fg, bg = getColorForLevel(1, thisEven, false)
+			} else {
+				fg, bg = getColorForLevel(1, math.Mod(float64(i), 4) == 0, math.Mod(float64(i), 2) == 1)
+			}
 
 		} else {
 
+			// dealing with the general level
+			fg, bg = getColorForLevel(commonDef.getDepth(), isBlue, !thisEven)
+		}
+
+		// new item
+		newItem := &configItem{
+			foreground: fg,
+			background: bg,
 		}
 
 		// adding the config for the current prop
-		result.items[property] = &configItem{
-			foreground:  fg,
-			background:  bg,
-			bgroundType: bgtype,
-		}
+		result.items[property] = newItem
+
+		// linkng the prop to its config
+		commonDef.chainedProperties[property].conf = newItem
 
 		// going deeper
 		if subMap := commonDef.subMaps[property]; subMap != nil {
-			result.subMaps[property] = subMap.initConfigMap()
+			if commonDef.parent == nil {
+				result.subMaps[property] = subMap.initConfigMap(thisEven)
+			} else {
+				result.subMaps[property] = subMap.initConfigMap(isBlue)
+			}
 		}
 	}
 
 	return result
 }
 
-type bgType string
-
-const (
-	bgTypeGREY  bgType = "grey"
-	bgTypeBLUE  bgType = "blue"
-	bgTypeGREEN bgType = "green"
-)
-
 // building a color corresponding to a level, and to an odd / even arg
-func getColorForLevel(level int, even bool, alt bool) (fg string, bg string, bgtype bgType) {
+func getColorForLevel(level int, isBlue bool, isGrey bool) (fg string, bg string) {
 
 	// from dark to clear
 	greens := [8]string{"#186A3B", "#1D8348", "#239B56", "#28B463", "#2ECC71", "#58D68D", "#82E0AA", "#ABEBC6"}
@@ -85,12 +95,12 @@ func getColorForLevel(level int, even bool, alt bool) (fg string, bg string, bgt
 		lvl = 7
 	}
 
-	if alt {
-		return fg, greys[lvl], bgTypeGREY
+	if isGrey {
+		return fg, greys[lvl]
 	}
 
-	if even {
-		return fg, blues[lvl], bgTypeBLUE
+	if isBlue {
+		return fg, blues[lvl]
 	}
-	return fg, greens[lvl], bgTypeGREEN
+	return fg, greens[lvl]
 }
