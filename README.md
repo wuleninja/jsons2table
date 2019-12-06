@@ -11,6 +11,7 @@ In order for this to work, the JSON files must have the same structure, for the 
 - [Content](#content)
 - [Principles](#principles)
 - [Installation](#installation)
+- [TODO](#todo)
 - [License](#license)
 
 <!-- /TOC -->
@@ -40,6 +41,13 @@ creates, within the given folder:
 - make sure you have `Go` installed and working
 - `go get -u github.com/ninjawule/jsons2table`
 - run `jsons2table -h` to check this program usage
+
+[Top](#content)
+
+---
+## TODO
+
+- the config file generation and use, which will allow to customize the column colors, sizes, etc.
 
 [Top](#content)
 

@@ -60,13 +60,21 @@ func (commonDef *fileMap) digest(jsonMap *fileMap) *fileMap {
 		for i, propertyName := range jsonMap.orderedProperties {
 
 			// init of the chained property
-			currentProperty := &chainedProperty{owner: commonDef, name: propertyName, kind: jsonMap.getPropertyKind(propertyName)}
+			currentProperty := &chainedProperty{
+				owner:     commonDef,
+				name:      propertyName,
+				kind:      jsonMap.getPropertyKind(propertyName),
+				maxLength: len(propertyName),
+			}
 			commonDef.chainedProperties[propertyName] = currentProperty
 
 			// chaining with the preceding property
 			if i > 0 {
 				currentProperty.linkAfter(commonDef.chainedProperties[jsonMap.orderedProperties[i-1]], false)
 			}
+
+			// initialising the stats for this property
+			currentProperty.initStat(jsonMap)
 		}
 
 		// initialising the submaps recursively this way:
@@ -85,11 +93,19 @@ func (commonDef *fileMap) digest(jsonMap *fileMap) *fileMap {
 			if existingProperty == nil {
 
 				// init of a new chained property
-				currentProperty := &chainedProperty{owner: commonDef, name: propertyName, kind: jsonMap.getPropertyKind(propertyName), addOn: true}
+				currentProperty := &chainedProperty{
+					owner: commonDef,
+					name:  propertyName,
+					kind:  jsonMap.getPropertyKind(propertyName),
+					addOn: true,
+				}
 				commonDef.chainedProperties[propertyName] = currentProperty
 
 				// insertion of this new chained property at the proper place - a big part of the magic is here
 				currentProperty.link(jsonMap.chainedProperties[propertyName])
+
+				// initialising the stats for this property
+				currentProperty.initStat(jsonMap)
 
 			} else {
 
@@ -108,6 +124,9 @@ func (commonDef *fileMap) digest(jsonMap *fileMap) *fileMap {
 						err(msg)
 					}
 				}
+
+				// we do want to update the stats though
+				existingProperty.updateStat(jsonMap)
 			}
 		}
 

@@ -40,6 +40,12 @@ func (commonDef *fileMap) writeExcel(conf *config, jsonMaps []*fileMap) error {
 		err("could not write the content. Cause: %s", errContent)
 	}
 
+	// writing some stats
+	footerLine := headerLine + len(jsonMaps) + 2
+	if errStat := commonDef.writeStats(excelFile, headerLine, footerLine, len(jsonMaps)); errStat != nil {
+		err("could not write the stats. Cause: %s", errStat)
+	}
+
 	// saving the file
 	excelFileName := fmt.Sprintf("%s/%s.xlsx", conf.folderPath, conf.folderInfo.Name())
 	errSave := excelFile.SaveAs(excelFileName)
@@ -97,7 +103,7 @@ func (commonDef *fileMap) writeHeaders(excelFile *excel.File, headerLine int) er
 			if errCol != nil {
 				return errCol
 			}
-			columnSize := math.Ceil(float64(len(property)) * 1.15)
+			columnSize := math.Ceil(float64(prop.maxLength) * 1.15)
 			if columnSize < 8 {
 				columnSize = 8
 			}
@@ -157,7 +163,9 @@ func (commonDef *fileMap) writeLine(excelFile *excel.File, jsonMap *fileMap, hea
 					} else if commonProp.kind == reflect.String {
 						setString(excelFile, currentLine, commonProp.index, jsonMap.values[property].(string))
 					} else if commonProp.kind == reflect.Float64 {
-						setFloat(excelFile, currentLine, commonProp.index, jsonMap.values[property].(float64))
+						if value := jsonMap.values[property].(float64); value != -999999 {
+							setFloat(excelFile, currentLine, commonProp.index, value)
+						}
 					} else {
 						err("case unhandled: '%s' (type = %v)", jsonProp.getFullName(), commonProp.kind)
 					}

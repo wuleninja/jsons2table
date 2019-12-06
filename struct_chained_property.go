@@ -8,15 +8,17 @@ package main
 import "reflect"
 
 type chainedProperty struct {
-	owner    *fileMap
-	name     string
-	fullName string // i.e. with the path to this property when it's nested
-	kind     reflect.Kind
-	previous *chainedProperty
-	next     *chainedProperty
-	addOn    bool        // when a new property is inserted in an already existing common definition
-	index    int         // the global index for this property within the common definition
-	conf     *configItem // the config associated with this property
+	owner     *fileMap
+	name      string
+	fullName  string // i.e. with the path to this property when it's nested
+	kind      reflect.Kind
+	previous  *chainedProperty
+	next      *chainedProperty
+	addOn     bool        // when a new property is inserted in an already existing common definition
+	index     int         // the global index for this property within the common definition
+	conf      *configItem // the config associated with this property
+	maxLength int         // the maximum size of the column
+	statistic *stat       // this property seen as a statistical variable
 }
 
 func (thisProperty *chainedProperty) String() string {
