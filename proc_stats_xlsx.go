@@ -115,11 +115,19 @@ func (thisProp *chainedProperty) detectStat() error {
 		}
 	}
 
+	// for numbers, let's find out if we need decimals of not
+	if thisProp.statistic.kind == statKindNUMBER {
+		for valueString := range thisProp.statistic.valueCounts {
+			value, _ := strconv.ParseFloat(valueString, 64)
+			thisProp.statistic.decimal = thisProp.statistic.decimal || float64(int64(value)) != value
+		}
+	}
+
 	return nil
 }
 
 // writing a particular stat
-func (thisProp *chainedProperty) writeStat(excelFile *excelize.File, headerLine int, footerLine int, nbRows int) error {
+func (thisProp *chainedProperty) writeStat(excelFile *excelize.File, headerLine, footerLine, nbRows int) error {
 
 	// handling the "header" for this stat
 	setString(excelFile, footerLine, thisProp.index, thisProp.name)
@@ -157,18 +165,19 @@ func (thisProp *chainedProperty) writeStat(excelFile *excelize.File, headerLine 
 	// writing out the stats for this column
 	switch thisProp.statistic.kind {
 	case statKindBOOLEAN:
-		return thisProp.writeBooleanStatFormulae(excelFile, firstCell, lastCell, statLine, nbRows)
+		return thisProp.writeBooleanStats(excelFile, firstCell, lastCell, statLine, nbRows)
 	case statKindDATE:
 	case statKindCATEGORY:
 		return thisProp.writeCategoryStats(excelFile, firstCell, lastCell, statLine, nbRows)
 	case statKindNUMBER:
+		return thisProp.writeNumberStats(excelFile, firstCell, lastCell, statLine, nbRows)
 	}
 
 	return nil
 }
 
 // writing formulae useful to treat a boolean statistic
-func (thisProp *chainedProperty) writeBooleanStatFormulae(excelFile *excelize.File, firstCell, lastCell string, statLine, nbRows int) error {
+func (thisProp *chainedProperty) writeBooleanStats(excelFile *excelize.File, firstCell, lastCell string, statLine, nbRows int) error {
 	if err := thisProp.writeCategoryValue(excelFile, "TRUE", firstCell, lastCell, 0, statLine, nbRows); err != nil {
 		return err
 	}
@@ -219,7 +228,7 @@ func (thisProp *chainedProperty) writeCategoryValue(excelFile *excelize.File, va
 	return nil
 }
 
-// writing the stats for a category
+// writing the stats for a category column
 func (thisProp *chainedProperty) writeCategoryStats(excelFile *excelize.File, firstCell, lastCell string, statLine, nbRows int) error {
 
 	// getting an ordered list for the values; sorting is done by value count, descending
@@ -245,6 +254,60 @@ func (thisProp *chainedProperty) writeCategoryStats(excelFile *excelize.File, fi
 
 	// let's deal with the empty values
 	return thisProp.writeCategoryValue(excelFile, "", firstCell, lastCell, len(values), statLine, nbRows)
+}
+
+// writing the stats for a number column
+func (thisProp *chainedProperty) writeNumberStats(excelFile *excelize.File, firstCell, lastCell string, statLine, nbRows int) error {
+	numberFormat := "0"
+	if thisProp.statistic.decimal {
+		numberFormat = "0.00"
+	}
+	if err := thisProp.writeNumberStatFn(excelFile, firstCell, lastCell, 0, statLine, "MIN", numberFormat); err != nil {
+		return err
+	}
+	if err := thisProp.writeNumberStatFn(excelFile, firstCell, lastCell, 1, statLine, "MAX", numberFormat); err != nil {
+		return err
+	}
+	if err := thisProp.writeNumberStatFn(excelFile, firstCell, lastCell, 2, statLine, "MEDIAN", numberFormat); err != nil {
+		return err
+	}
+	if err := thisProp.writeNumberStatFn(excelFile, firstCell, lastCell, 3, statLine, "AVERAGE", numberFormat); err != nil {
+		return err
+	}
+	if err := thisProp.writeNumberStatFn(excelFile, firstCell, lastCell, 4, statLine, "STDEV.P", numberFormat); err != nil {
+		return err
+	}
+	if err := thisProp.writeNumberStatFn(excelFile, firstCell, lastCell, 5, statLine, "COUNTA", ""); err != nil {
+		return err
+	}
+	return nil
+}
+
+// writing a particular stat for a number column
+func (thisProp *chainedProperty) writeNumberStatFn(excelFile *excelize.File,
+	firstCell, lastCell string, index, statLine int, function string, customNumberFormat string) error {
+
+	// which row do we start from ?
+	i := statLine + 2*index
+
+	// the function name
+	setString(excelFile, i, thisProp.index, function)
+
+	// writing down the formula for the function
+	if errSet := excelFile.SetCellFormula(mainSheetName, getCell(i+1, thisProp.index), function+"("+firstCell+":"+lastCell+")"); errSet != nil {
+		return errSet
+	}
+	if customNumberFormat != "" {
+		style, errStyle := excelFile.NewStyle(fmt.Sprintf(`{"custom_number_format": "%s"}`, customNumberFormat))
+		if errStyle != nil {
+			return errStyle
+		}
+		if errSet := excelFile.SetCellStyle(mainSheetName, getCell(i+1, thisProp.index), getCell(i+1, thisProp.index), style); errSet != nil {
+			return errSet
+		}
+	}
+
+	return nil
 }
 
 //------------------------------------------------------------------------------

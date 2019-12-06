@@ -18,4 +18,5 @@ type stat struct {
 	owner       *chainedProperty
 	valueCounts map[string]int
 	kind        statKind
+	decimal     bool // if of number kind, do the values have decimal ?
 }
