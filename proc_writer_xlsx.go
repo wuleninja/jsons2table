@@ -198,8 +198,11 @@ func (commonDef *fileMap) writeLine(excelFile *excel.File, jsonMap *fileMap, hea
 // apply a basic style on the Excel file
 func (commonDef *fileMap) styleHeaders(excelFile *excel.File, conf *j2tConfig) error {
 
+	style := fmt.Sprintf(`{"freeze":true,"split":false,"x_split":1,"y_split":%d,"top_left_cell":"B10","active_pane":"topRight","panes":[{"sqref":"B10","active_cell":"B10","pane":"topRight"}]}`, commonDef.getHeight())
+	println(style)
+
 	// dealing with the frozen panes
-	excelFile.SetPanes(mainSheetName, fmt.Sprintf(`{"freeze":true,"split":true,"x_split":1,"y_split":%d}`, commonDef.getHeight()))
+	excelFile.SetPanes(mainSheetName, style)
 
 	// applying some colors
 	if errColor := commonDef.applyColor(excelFile, conf.content); errColor != nil {
