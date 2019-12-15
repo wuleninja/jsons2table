@@ -5,21 +5,39 @@
 package main
 
 import (
+	"encoding/json"
+	"io/ioutil"
 	"os"
+
+	"github.com/xgfone/go-tools/file"
 )
 
 // getting the config from an existing JSON (.conf) file, or building it from the definition
-func (commonDef *fileMap) getOrInitConfig(folderPath string, folderInfo os.FileInfo) *config {
+func (commonDef *fileMap) getOrInitConfig(folderPath string, folderInfo os.FileInfo, configFileName string) (*j2tConfig, error) {
 
-	config := &config{
+	// initialising the config object
+	config := &j2tConfig{
 		folderPath: folderPath,
 		folderInfo: folderInfo,
-		content:    commonDef.initConfigMap(),
+		content:    commonDef.initConfigMap(), // to change, with the lecture of the config file, if it exists
 	}
 
-	return config
+	// loading the config file, if present
+	configFile := folderPath + "/" + configFileName
+	if file.IsExist(configFile) {
+		filebytes, err := ioutil.ReadFile(configFile)
+		if err != nil {
+			return nil, err
+		}
+		if errMarshall := json.Unmarshal(filebytes, config); errMarshall != nil {
+			return nil, errMarshall
+		}
+	}
+
+	return config, nil
 }
 
+// initialising the config file
 func (commonDef *fileMap) initConfigMap() *configMap {
 
 	result := &configMap{

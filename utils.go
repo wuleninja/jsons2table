@@ -19,7 +19,7 @@ import (
 func getCell(row int, col int) string {
 	coord, errCoord := excel.CoordinatesToCellName(col, row)
 	if errCoord != nil {
-		err("cound not get coordinates at row '%s' and column '%s'. Cause: %s", row, col, errCoord)
+		err("could not get coordinates at row '%d' and column '%d'. Cause: %s", row, col, errCoord)
 	}
 	return coord
 }
@@ -35,7 +35,11 @@ func getString(excelFile *excel.File, row int, col int) string {
 
 // setting a bool value into the main sheet
 func setBool(excelFile *excel.File, row int, col int, value bool) {
-	if errSet := excelFile.SetCellBool(mainSheetName, getCell(row, col), value); errSet != nil {
+	valueString := "NO"
+	if value {
+		valueString = "YES"
+	}
+	if errSet := excelFile.SetCellStr(mainSheetName, getCell(row, col), valueString); errSet != nil {
 		err("error while setting value '%v' at row %d and column %d", value, row, col)
 	}
 }

@@ -19,8 +19,8 @@ func (newProp *chainedProperty) link(originalProp *chainedProperty) {
 		panic(fmt.Errorf("original property '%s' was chained to nothing", originalProp))
 	}
 
-	debug("\n+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++")
-	debug("==> trying to link property: %s", newProp)
+	log("\n+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++")
+	log("==> trying to link property: %s", newProp)
 
 	// the properties already chained in the common definition
 	commonProperties := newProp.owner.chainedProperties
@@ -29,7 +29,7 @@ func (newProp *chainedProperty) link(originalProp *chainedProperty) {
 	if originalProp.previous == nil {
 
 		root := newProp.owner.oneChainedProperty().root()
-		debug("--> linking before root %s", root)
+		log("--> linking before root %s", root)
 		root.linkAfter(newProp, true)
 		return
 	}
@@ -38,28 +38,28 @@ func (newProp *chainedProperty) link(originalProp *chainedProperty) {
 	// NB: it exists since we necessarily dealt with it previously
 	firstPossiblePreviousProp := commonProperties[originalProp.previous.name]
 
-	debug("--> first previous = %s", firstPossiblePreviousProp)
+	log("--> first previous = %s", firstPossiblePreviousProp)
 	// what's the max after we can reach ?
 	var lastPossibleNextProp *chainedProperty
 
 	// let's look at the next property that exists in the common definition
 	for currentNext := originalProp.next; currentNext != nil && lastPossibleNextProp == nil; currentNext = currentNext.next {
-		debug("--> last next scan = %s", currentNext)
+		log("--> last next scan = %s", currentNext)
 		lastPossibleNextProp = commonProperties[currentNext.name]
 	}
 
 	// if still we have no clue about where to stop, then right after the first previous might be good
 	if lastPossibleNextProp == nil {
-		debug("--> last possible next prop not found, so getting the next of the first possible previous prop")
+		log("--> last possible next prop not found, so getting the next of the first possible previous prop")
 		lastPossibleNextProp = firstPossiblePreviousProp.next
 	}
 
-	debug("--> last next      = %s", lastPossibleNextProp)
+	log("--> last next      = %s", lastPossibleNextProp)
 
 	// in any case, if the first previous was last, or touches the last next property,
 	// then we just have to squeeze our property in between !
 	if firstPossiblePreviousProp.touches(lastPossibleNextProp) {
-		debug("--> 'first previous' and 'last next' already touch each other!")
+		log("--> 'first previous' and 'last next' already touch each other!")
 		if lastPossibleNextProp == nil {
 			newProp.linkAfter(firstPossiblePreviousProp, true)
 			return
@@ -68,28 +68,28 @@ func (newProp *chainedProperty) link(originalProp *chainedProperty) {
 		return
 	}
 
-	debug("--> no easy linking done here, so entering scanning loop")
+	log("--> no easy linking done here, so entering scanning loop")
 
 	// so we basically look for the best previous property for our current prop,
 	// starting from the firstPossiblePreviousProp, and finishing at most with the lastPossibleNextProp
 	for previous := firstPossiblePreviousProp; !previous.touches(lastPossibleNextProp); previous = previous.next {
 
-		debug("--> in the loop : can we sit betwen '%s' and '%s' ?", previous, previous.next)
+		log("--> in the loop : can we sit betwen '%s' and '%s' ?", previous, previous.next)
 
 		// has the property right after the current previous property a better fit in the alphabetical sense ?
 		if next := previous.next; next.name > newProp.name {
 
-			debug("--> in the loop : YEAH!")
+			log("--> in the loop : YEAH!")
 
 			// yeah, so we stop right here
 			newProp.insertAfter(previous)
 			return
 		}
 
-		debug("--> in the loop : nope!")
+		log("--> in the loop : nope!")
 	}
 
-	debug("--> exited the scanning loop : inserting just right before the last next")
+	log("--> exited the scanning loop : inserting just right before the last next")
 
 	// we're here because we reached lastPossibleNextProp; so let's just insert our property before this
 	newProp.insertBefore(lastPossibleNextProp)

@@ -11,18 +11,24 @@ import (
 	"strings"
 )
 
+// the "path" is the complete name for a property or a submap, that includes the parents' names
+// e.g. "SubMap_2.SubMap_7.Property_11"
+type path string
+
 // cf. https://stackoverflow.com/a/48301733
 type fileMap struct {
-	name              string                      // for the root maps, keeping the file name here; for submaps, keeping the property name
-	parent            *fileMap                    // for a submap, keeping its parent
-	subMaps           map[string]*fileMap         // the maps belonging to a map
-	values            map[string]interface{}      // the pure values (non-map) within a map
-	orderedProperties []string                    // keeping track of the original order of the properties
-	originalContent   map[string]interface{}      // the raw info within this mal
-	chainedProperties map[string]*chainedProperty // the properties kept as chained values
-	propertyIndexes   map[string]int              // the index of each property in this map
-	height            int                         // this data tree's height
-	depth             int                         // this data tree's depth
+	name                 string                      // for the root maps, keeping the file name here; for submaps, keeping the property name
+	parent               *fileMap                    // for a submap, keeping its parent
+	subMaps              map[string]*fileMap         // the maps belonging to a map
+	values               map[string]interface{}      // the pure values (non-map) within a map
+	orderedProperties    []string                    // keeping track of the original order of the properties
+	originalContent      map[string]interface{}      // the raw info within this mal
+	chainedProperties    map[string]*chainedProperty // the properties kept as chained values
+	propertyIndexes      map[string]int              // the index of each property in this map
+	height               int                         // this data tree's height
+	depth                int                         // this data tree's depth
+	path                 path                        // this map's full path within the common definition
+	allChainedProperties map[path]*chainedProperty   // indexing all the chained properties from the root common definition
 }
 
 // UnmarshalJSON : keeping the properties' order
@@ -164,4 +170,29 @@ func (thisMap *fileMap) getLastIndex() int {
 		return subMap.getLastIndex()
 	}
 	return thisMap.chainedProperties[lastProperty].index
+}
+
+// getting the common definition from any of its submaps
+func (thisMap *fileMap) root() *fileMap {
+	if thisMap.parent == nil {
+		return thisMap
+	}
+	return thisMap.parent.root()
+}
+
+// getting the path for this (sub-)map
+func (thisMap *fileMap) getPath() path {
+	if thisMap.path == "" {
+		if thisMap.parent == nil {
+			thisMap.path = path("")
+		} else {
+			thisMap.path = path(fmt.Sprintf("%s%s/", thisMap.parent.getPath(), thisMap.name))
+		}
+	}
+	return thisMap.path
+}
+
+// indexing the given property at the root level
+func (thisMap *fileMap) register(prop *chainedProperty) {
+	thisMap.root().allChainedProperties[prop.getPath()] = prop
 }

@@ -4,6 +4,7 @@ import (
 	"flag"
 	"fmt"
 	"os"
+	"runtime/debug"
 	"sort"
 
 	_ "github.com/tealeg/xlsx"
@@ -12,7 +13,7 @@ import (
 var debugMode bool
 var continueMode bool
 
-func debug(strfmt string, params ...interface{}) {
+func log(strfmt string, params ...interface{}) {
 	if debugMode {
 		println(fmt.Sprintf(strfmt, params...))
 	}
@@ -52,8 +53,11 @@ func main() {
 		err("'%s' is not a valid directory!", folderPath)
 	}
 
+	// the name of the config file
+	configFileName := folderInfo.Name() + ".json"
+
 	// scanning all the files within the JSON folder
-	jsonMaps, errScan := scanDir(folderPath)
+	jsonMaps, errScan := scanDir(folderPath, configFileName)
 	if errScan != nil {
 		err("error while scanning: %s", errScan)
 	}
@@ -66,11 +70,16 @@ func main() {
 	// merging all the maps to determine the common definition
 	commonDef := merge(jsonMaps)
 
-	// computing the common definition data tree height
-	debug("Common definition height is %d", commonDef.getHeight())
-
 	// retrieving or initialising the config
-	config := commonDef.getOrInitConfig(folderPath, folderInfo)
+	config, errConf := commonDef.getOrInitConfig(folderPath, folderInfo, configFileName)
+	if errConf != nil {
+		err("error while reading the config file: %s", errConf)
+	}
+
+	// insert the configured new columns
+	if errInsert := commonDef.insertNewColumns(config); errInsert != nil {
+		err("error while inserting the configured new columns: %s", errInsert)
+	}
 
 	// writing the Excel file
 	commonDef.writeExcel(config, jsonMaps)
@@ -79,5 +88,6 @@ func main() {
 // fatal error handling
 func err(strfmt string, args ...interface{}) {
 	fmt.Printf(strfmt+"\n", args...)
+	debug.PrintStack()
 	os.Exit(1)
 }

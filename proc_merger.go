@@ -10,24 +10,24 @@ import "fmt"
 // digesting all the file maps, to build a common definition for them
 func merge(jsonMaps []*fileMap) *fileMap {
 
-	commonDef := &fileMap{name: "Common definition"}
+	commonDef := &fileMap{name: "Common definition", allChainedProperties: map[path]*chainedProperty{}}
 
 	// digesting each JSON
 	for _, jsonMap := range jsonMaps {
 
 		// some debugging log
-		if debugMode {
-			jsonMap.displayOrdered(0, showValue)
-		}
+		// if debugMode {
+		// 	jsonMap.displayOrdered(0, showValue)
+		// }
 
 		// digesting this JSON map into the common definition
 		commonDef.digest(jsonMap)
 
 		// some debugging log
-		if debugMode {
-			commonDef.reorder()
-			commonDef.displayOrdered(0, showKind)
-		}
+		// if debugMode {
+		// 	commonDef.reorder()
+		// 	commonDef.displayOrdered(0, showKind)
+		// }
 	}
 
 	// reordering the common definition
@@ -37,10 +37,6 @@ func merge(jsonMaps []*fileMap) *fileMap {
 	for _, jsonMap := range jsonMaps {
 		commonDef.control(jsonMap)
 	}
-
-	// computing the index for each final property contained within the definition
-	currentIndex := 1
-	commonDef.index(&currentIndex)
 
 	// retunring, for what's next, i.e. using this common definition to create tables
 	return commonDef
@@ -73,6 +69,9 @@ func (commonDef *fileMap) digest(jsonMap *fileMap) *fileMap {
 				currentProperty.linkAfter(commonDef.chainedProperties[jsonMap.orderedProperties[i-1]], false)
 			}
 
+			// global registration if the property
+			commonDef.register(currentProperty)
+
 			// initialising the stats for this property
 			currentProperty.initStat(jsonMap)
 		}
@@ -104,6 +103,9 @@ func (commonDef *fileMap) digest(jsonMap *fileMap) *fileMap {
 				// insertion of this new chained property at the proper place - a big part of the magic is here
 				currentProperty.link(jsonMap.chainedProperties[propertyName])
 
+				// global registration if the property
+				commonDef.register(currentProperty)
+
 				// initialising the stats for this property
 				currentProperty.initStat(jsonMap)
 
@@ -116,8 +118,8 @@ func (commonDef *fileMap) digest(jsonMap *fileMap) *fileMap {
 						"\ntype of '%s' is %s,"+
 						"\nbut type of '%s' is %s",
 						propertyName,
-						existingProperty.getFullName(), existingProperty.kind,
-						jsonMap.chainedProperties[propertyName].getFullName(), jsonMap.getPropertyKind(propertyName))
+						existingProperty.getPath(), existingProperty.kind,
+						jsonMap.chainedProperties[propertyName].getPath(), jsonMap.getPropertyKind(propertyName))
 					if continueMode {
 						println(msg)
 					} else {
@@ -178,7 +180,7 @@ func (commonDef *fileMap) control(jsonMap *fileMap) {
 			err("\nThere's a problem here: "+
 				"\nwe have '%s' before '%s'"+
 				"\nbut the order is inversed in the common definition!",
-				property.getFullName(), previous.getFullName(),
+				property.getPath(), previous.getPath(),
 			)
 		}
 	}

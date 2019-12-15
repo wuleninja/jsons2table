@@ -18,7 +18,12 @@ const (
 )
 
 // writing the excel file
-func (commonDef *fileMap) writeExcel(conf *config, jsonMaps []*fileMap) error {
+func (commonDef *fileMap) writeExcel(conf *j2tConfig, jsonMaps []*fileMap) error {
+
+	// reordering - just to be sure - then computing the index for each final property contained within the definition
+	commonDef.reorder()
+	currentIndex := 1
+	commonDef.index(&currentIndex)
 
 	// creating the file and the main sheet
 	excelFile := excel.NewFile()
@@ -30,7 +35,7 @@ func (commonDef *fileMap) writeExcel(conf *config, jsonMaps []*fileMap) error {
 		err("could not write the headers. Cause: %s", errHeader)
 	}
 
-	// styling
+	// styling the headers
 	if errStyle := commonDef.styleHeaders(excelFile, conf); errStyle != nil {
 		err("could not style the sheet. Cause: %s", errStyle)
 	}
@@ -61,9 +66,9 @@ func (commonDef *fileMap) writeExcel(conf *config, jsonMaps []*fileMap) error {
 // writing the Excel file's headers
 func (commonDef *fileMap) writeHeaders(excelFile *excel.File, headerLine int) error {
 
-	debug("\n+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++")
+	log("\n+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++")
 	if debugMode {
-		debug("dealing with section %s", commonDef.getFullName())
+		log("dealing with section %s", commonDef.getFullName())
 	}
 
 	// following the order
@@ -88,7 +93,7 @@ func (commonDef *fileMap) writeHeaders(excelFile *excel.File, headerLine int) er
 
 			// retrieving the right property
 			prop := commonDef.chainedProperties[property]
-			debug("dealing with property n°%d = %s", prop.index, prop.getFullName())
+			log("dealing with property n°%d = %s", prop.index, prop.getPath())
 
 			// writing it
 			setString(excelFile, prop.owner.getDepth(), prop.index, property)
@@ -134,8 +139,8 @@ func (commonDef *fileMap) writeLine(excelFile *excel.File, jsonMap *fileMap, hea
 
 	if jsonMap != nil {
 
-		debug("\n+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++")
-		debug("writing line for with '%s'", commonDef.getFullName())
+		log("\n+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++")
+		log("writing line for with '%s'", commonDef.getFullName())
 
 		// always following the order
 		for _, property := range commonDef.orderedProperties {
@@ -148,7 +153,7 @@ func (commonDef *fileMap) writeLine(excelFile *excel.File, jsonMap *fileMap, hea
 
 				// checking we're in the right column !
 				commonProp := commonDef.chainedProperties[property]
-				debug("dealing with property %d - '%s'", commonProp.index, commonProp.getFullName())
+				log("dealing with property %d - '%s'", commonProp.index, commonProp.getPath())
 				if header := getString(excelFile, headerLine, commonProp.index); header != property {
 					err("We have a problem here : at column %d, header says '%s', but we're dealing with '%s'",
 						commonProp.index, header, property)
@@ -167,7 +172,7 @@ func (commonDef *fileMap) writeLine(excelFile *excel.File, jsonMap *fileMap, hea
 							setFloat(excelFile, currentLine, commonProp.index, value)
 						}
 					} else {
-						err("case unhandled: '%s' (type = %v)", jsonProp.getFullName(), commonProp.kind)
+						err("case unhandled: '%s' (type = %v)", jsonProp.getPath(), commonProp.kind)
 					}
 				}
 
@@ -191,7 +196,7 @@ func (commonDef *fileMap) writeLine(excelFile *excel.File, jsonMap *fileMap, hea
 }
 
 // apply a basic style on the Excel file
-func (commonDef *fileMap) styleHeaders(excelFile *excel.File, conf *config) error {
+func (commonDef *fileMap) styleHeaders(excelFile *excel.File, conf *j2tConfig) error {
 
 	// dealing with the frozen panes
 	excelFile.SetPanes(mainSheetName, fmt.Sprintf(`{"freeze":true,"split":true,"x_split":1,"y_split":%d}`, commonDef.getHeight()))
@@ -209,8 +214,6 @@ func (commonDef *fileMap) applyColor(excelFile *excel.File, confMap *configMap) 
 
 	// coloring each property
 	for propertyName, prop := range commonDef.chainedProperties {
-
-		debug("dealing with %s", prop.getFullName())
 
 		// getting the right config item
 		confItem := confMap.items[propertyName]

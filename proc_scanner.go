@@ -14,7 +14,7 @@ import (
 )
 
 // main directory scanning function
-func scanDir(folderPath string) (results []*fileMap, err error) {
+func scanDir(folderPath string, configFileName string) (results []*fileMap, err error) {
 
 	// checking the file infos
 	fileInfos, errDir := ioutil.ReadDir(folderPath)
@@ -24,7 +24,7 @@ func scanDir(folderPath string) (results []*fileMap, err error) {
 
 	// iterating over each file
 	for _, fileInfo := range fileInfos {
-		if strings.HasSuffix(fileInfo.Name(), ".json") {
+		if strings.HasSuffix(fileInfo.Name(), ".json") && fileInfo.Name() != configFileName {
 			fileMap, errScan := scanFile(folderPath, fileInfo.Name())
 			if errScan != nil {
 				return nil, fmt.Errorf("error while treating file: %s. Cause: %s", fileInfo.Name(), errScan)

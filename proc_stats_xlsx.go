@@ -103,7 +103,7 @@ func (thisProp *chainedProperty) detectStat() error {
 
 					} else if thisProp.statistic.kind != statKindDATE {
 						return fmt.Errorf("value '%s' in column %s is a date, whereas the the column type has been detected as of type '%s'",
-							value, thisProp.getFullName(), thisProp.statistic.kind)
+							value, thisProp.getPath(), thisProp.statistic.kind)
 					}
 
 					// if not, we might have a category
@@ -178,10 +178,10 @@ func (thisProp *chainedProperty) writeStat(excelFile *excelize.File, headerLine,
 
 // writing formulae useful to treat a boolean statistic
 func (thisProp *chainedProperty) writeBooleanStats(excelFile *excelize.File, firstCell, lastCell string, statLine, nbRows int) error {
-	if err := thisProp.writeCategoryValue(excelFile, "TRUE", firstCell, lastCell, 0, statLine, nbRows); err != nil {
+	if err := thisProp.writeCategoryValue(excelFile, "YES", firstCell, lastCell, 0, statLine, nbRows); err != nil {
 		return err
 	}
-	if err := thisProp.writeCategoryValue(excelFile, "FALSE", firstCell, lastCell, 1, statLine, nbRows); err != nil {
+	if err := thisProp.writeCategoryValue(excelFile, "NO", firstCell, lastCell, 1, statLine, nbRows); err != nil {
 		return err
 	}
 	return thisProp.writeCategoryValue(excelFile, "", firstCell, lastCell, 2, statLine, nbRows)
@@ -274,7 +274,7 @@ func (thisProp *chainedProperty) writeNumberStats(excelFile *excelize.File, firs
 	if err := thisProp.writeNumberStatFn(excelFile, firstCell, lastCell, 3, statLine, "AVERAGE", numberFormat); err != nil {
 		return err
 	}
-	if err := thisProp.writeNumberStatFn(excelFile, firstCell, lastCell, 4, statLine, "STDEV.P", numberFormat); err != nil {
+	if err := thisProp.writeNumberStatFn(excelFile, firstCell, lastCell, 4, statLine, "STDEVPA", numberFormat); err != nil {
 		return err
 	}
 	if err := thisProp.writeNumberStatFn(excelFile, firstCell, lastCell, 5, statLine, "COUNTA", ""); err != nil {

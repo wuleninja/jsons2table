@@ -5,20 +5,25 @@
 
 package main
 
-import "reflect"
+import (
+	"fmt"
+	"reflect"
+)
 
 type chainedProperty struct {
-	owner     *fileMap
-	name      string
-	fullName  string // i.e. with the path to this property when it's nested
-	kind      reflect.Kind
-	previous  *chainedProperty
-	next      *chainedProperty
-	addOn     bool        // when a new property is inserted in an already existing common definition
-	index     int         // the global index for this property within the common definition
-	conf      *configItem // the config associated with this property
-	maxLength int         // the maximum size of the column
-	statistic *stat       // this property seen as a statistical variable
+	owner          *fileMap
+	name           string
+	path           path // i.e. with the path to this property when it's nested
+	kind           reflect.Kind
+	previous       *chainedProperty
+	next           *chainedProperty
+	addOn          bool        // when a new property is inserted in an already existing common definition
+	index          int         // the global index for this property within the common definition
+	conf           *configItem // the config associated with this property
+	maxLength      int         // the maximum size of the column
+	statistic      *stat       // this property seen as a statistical variable
+	computed       bool        // if true, then is property is computed from other columns
+	computationDef interface{} // if this is a computed property, then how to compute stuff is set here
 }
 
 func (thisProperty *chainedProperty) String() string {
@@ -28,21 +33,17 @@ func (thisProperty *chainedProperty) String() string {
 	return thisProperty.name
 }
 
-func (thisProperty *chainedProperty) getFullName() string {
-	if thisProperty.fullName != "" {
-		return thisProperty.fullName
+func (thisProperty *chainedProperty) getPath() path {
+	if thisProperty.path == "" {
+		thisProperty.path = path(fmt.Sprintf("%s%s", thisProperty.owner.getPath(), thisProperty.name))
 	}
-	thisProperty.fullName = thisProperty.name
-	for owner := thisProperty.owner; owner != nil; owner = owner.parent {
-		thisProperty.fullName = owner.name + " / " + thisProperty.fullName
-	}
-	return thisProperty.fullName
+	return thisProperty.path
 }
 
 // chaining this property right after the given targeted property
 func (thisProperty *chainedProperty) linkAfter(target *chainedProperty, verbose bool) {
 	if verbose {
-		debug("--> new linking : %s -> %s", target, thisProperty)
+		log("--> new linking : %s -> %s", target, thisProperty)
 	}
 	target.next = thisProperty
 	thisProperty.previous = target
@@ -52,8 +53,12 @@ func (thisProperty *chainedProperty) linkAfter(target *chainedProperty, verbose 
 func (thisProperty *chainedProperty) insertAfter(target *chainedProperty) {
 	targetNext := target.next
 	thisProperty.linkAfter(target, false)
-	targetNext.linkAfter(thisProperty, false)
-	debug("--> insertion   : %s -> %s -> %s", target, thisProperty, targetNext)
+	if targetNext != nil {
+		targetNext.linkAfter(thisProperty, false)
+		log("--> insertion   : %s -> %s -> %s", target, thisProperty, targetNext)
+	} else {
+		log("--> insertion   : %s -> %s", target, thisProperty)
+	}
 }
 
 // inserting before the given property, and thus, after its previous one
@@ -61,7 +66,7 @@ func (thisProperty *chainedProperty) insertBefore(target *chainedProperty) {
 	targetPrevious := target.previous
 	thisProperty.linkAfter(targetPrevious, false)
 	target.linkAfter(thisProperty, false)
-	debug("--> insertion : %s -> %s -> %s", targetPrevious, thisProperty, target)
+	log("--> insertion : %s -> %s -> %s", targetPrevious, thisProperty, target)
 }
 
 // finding the root
