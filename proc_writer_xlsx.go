@@ -159,8 +159,12 @@ func (commonDef *fileMap) writeLine(excelFile *excel.File, jsonMap *fileMap, hea
 						commonProp.index, header, property)
 				}
 
-				// does the current JSON have this property ?
-				if jsonProp := jsonMap.chainedProperties[property]; jsonProp != nil {
+				// are we dealing with a computed property ?
+				if commonProp.computed {
+					commonDef.setComputedValue(excelFile, currentLine, commonProp.index, commonProp.computationDef)
+
+					// does the current JSON have this property ?
+				} else if jsonProp := jsonMap.chainedProperties[property]; jsonProp != nil {
 
 					// yes, so let's copy it into the excel file
 					if commonProp.kind == reflect.Bool {
@@ -198,14 +202,25 @@ func (commonDef *fileMap) writeLine(excelFile *excel.File, jsonMap *fileMap, hea
 // apply a basic style on the Excel file
 func (commonDef *fileMap) styleHeaders(excelFile *excel.File, conf *j2tConfig) error {
 
-	style := fmt.Sprintf(`{"freeze":true,"split":false,"x_split":1,"y_split":%d,"top_left_cell":"B10","active_pane":"topRight","panes":[{"sqref":"B10","active_cell":"B10","pane":"topRight"}]}`, commonDef.getHeight())
-	println(style)
+	style := fmt.Sprintf(`{
+  "freeze": true,
+  "split": false,
+  "x_split": 1,
+  "y_split": % d,
+  "top_left_cell": "B10",
+  "active_pane": "topRight",
+  "panes": [{
+    "sqref": "B10",
+    "active_cell": "B10",
+    "pane": "topRight"
+  }]
+}`, commonDef.getHeight())
 
 	// dealing with the frozen panes
 	excelFile.SetPanes(mainSheetName, style)
 
 	// applying some colors
-	if errColor := commonDef.applyColor(excelFile, conf.content); errColor != nil {
+	if errColor := commonDef.applyColor(excelFile); errColor != nil {
 		return errColor
 	}
 
@@ -213,13 +228,14 @@ func (commonDef *fileMap) styleHeaders(excelFile *excel.File, conf *j2tConfig) e
 }
 
 // applying colors configured in the given config map for the current common definition map
-func (commonDef *fileMap) applyColor(excelFile *excel.File, confMap *configMap) error {
+func (commonDef *fileMap) applyColor(excelFile *excel.File) error {
 
 	// coloring each property
 	for propertyName, prop := range commonDef.chainedProperties {
 
 		// getting the right config item
-		confItem := confMap.items[propertyName]
+		// confItem := confMap.items[propertyName]
+		confItem := prop.conf
 
 		// where should the style apply ?
 		var coord string
@@ -230,7 +246,7 @@ func (commonDef *fileMap) applyColor(excelFile *excel.File, confMap *configMap) 
 			coord = getCell(subMap.getDepth()-1, subMap.getFirstIndex())
 
 			// going under
-			subMap.applyColor(excelFile, confMap.subMaps[propertyName])
+			subMap.applyColor(excelFile)
 
 		} else {
 			coord = getCell(prop.owner.getDepth(), prop.index)
@@ -249,4 +265,26 @@ func (commonDef *fileMap) applyColor(excelFile *excel.File, confMap *configMap) 
 	}
 
 	return nil
+}
+
+// sets a computed value within a given cell, given a computation definition
+func (commonDef *fileMap) setComputedValue(excelFile *excel.File, row int, col int, computationDef interface{}) {
+	switch computationDef.(type) {
+	case *newDuration:
+		duration := computationDef.(*newDuration)
+		fromDate := getCell(row, commonDef.getProp(duration.FromDate).index)
+		toDate := getCell(row, commonDef.getProp(duration.ToDate).index)
+		if errSet := excelFile.SetCellFormula(mainSheetName, getCell(row, col), toDate+"-"+fromDate); errSet != nil {
+			err("error while setting computed value at row %d col %d: %s", row, col, errSet)
+		}
+	case *newSum:
+		sum := computationDef.(*newSum)
+		formula := getCell(row, commonDef.getProp(sum.AddTogether[0]).index)
+		for i := 1; i < len(sum.AddTogether); i++ {
+			formula = formula + "+" + getCell(row, commonDef.getProp(sum.AddTogether[i]).index)
+		}
+		if errSet := excelFile.SetCellFormula(mainSheetName, getCell(row, col), formula); errSet != nil {
+			err("error while setting computed value at row %d col %d: %s", row, col, errSet)
+		}
+	}
 }

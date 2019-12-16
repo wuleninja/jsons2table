@@ -11,14 +11,8 @@ import "os"
 type j2tConfig struct {
 	folderPath string
 	folderInfo os.FileInfo
-	content    *configMap
 	General    *generalConfig    `json:"General"`
 	NewColumns *newColumnsConfig `json:"NewColumns"`
-}
-
-type configMap struct {
-	items   map[string]*configItem
-	subMaps map[string]*configMap
 }
 
 type configItem struct {
@@ -42,8 +36,8 @@ type newColumn struct {
 
 type newDuration struct {
 	newColumn
-	From path `json:"From"`
-	To   path `json:"To"`
+	FromDate path `json:"FromDate"`
+	ToDate   path `json:"ToDate"`
 }
 
 type newSum struct {

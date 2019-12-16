@@ -196,3 +196,8 @@ func (thisMap *fileMap) getPath() path {
 func (thisMap *fileMap) register(prop *chainedProperty) {
 	thisMap.root().allChainedProperties[prop.getPath()] = prop
 }
+
+// returns a property indexed on the cmmon definition thanks to its path
+func (thisMap *fileMap) getProp(propPath path) *chainedProperty {
+	return thisMap.root().allChainedProperties[propPath]
+}

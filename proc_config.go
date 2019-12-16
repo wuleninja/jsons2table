@@ -19,8 +19,10 @@ func (commonDef *fileMap) getOrInitConfig(folderPath string, folderInfo os.FileI
 	config := &j2tConfig{
 		folderPath: folderPath,
 		folderInfo: folderInfo,
-		content:    commonDef.initConfigMap(), // to change, with the lecture of the config file, if it exists
 	}
+
+	// initialising the config, if not done yet (well, we know that its not done yet for now)
+	commonDef.initConfigMap() // to change, with the lecture of the config file, if it exists
 
 	// loading the config file, if present
 	configFile := folderPath + "/" + configFileName
@@ -38,12 +40,7 @@ func (commonDef *fileMap) getOrInitConfig(folderPath string, folderInfo os.FileI
 }
 
 // initialising the config file
-func (commonDef *fileMap) initConfigMap() *configMap {
-
-	result := &configMap{
-		items:   map[string]*configItem{},
-		subMaps: map[string]*configMap{},
-	}
+func (commonDef *fileMap) initConfigMap() {
 
 	for index, property := range commonDef.orderedProperties {
 
@@ -69,17 +66,12 @@ func (commonDef *fileMap) initConfigMap() *configMap {
 			background: bg,
 		}
 
-		// adding the config for the current prop
-		result.items[property] = newItem
-
 		// linking the prop to its config
 		commonDef.chainedProperties[property].conf = newItem
 
 		// going deeper
 		if subMap := commonDef.subMaps[property]; subMap != nil {
-			result.subMaps[property] = subMap.initConfigMap()
+			subMap.initConfigMap()
 		}
 	}
-
-	return result
 }
