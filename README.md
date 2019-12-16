@@ -40,7 +40,7 @@ creates, within the given folder:
 
 - make sure you have `Go` installed and working
 - `go get -u github.com/ninjawule/jsons2table`
-- run `jsons2table -h` to check this program usage
+- run `jsons2table -h` to check this program usage
 
 [Top](#content)
 
@@ -48,6 +48,10 @@ creates, within the given folder:
 ## TODO
 
 - the config file generation and use, which will allow to customize the column colors, sizes, etc.
+- better doc with a working example to show how that works
+- CSV generation
+- option to choose between CSV only / EXCEL only / both CSV & Excel
+- pure library mode (being able to use jsons2table in an application)
 
 [Top](#content)
 
