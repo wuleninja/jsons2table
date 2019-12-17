@@ -11,8 +11,8 @@ import "os"
 type j2tConfig struct {
 	folderPath string
 	folderInfo os.FileInfo
-	General    *generalConfig    `json:"General"`
-	NewColumns *newColumnsConfig `json:"NewColumns"`
+	General    *generalConfig     `json:"General"`
+	NewColumns []*newColumnConfig `json:"NewColumns"`
 }
 
 type configItem struct {
@@ -24,24 +24,11 @@ type generalConfig struct {
 	FalseValue string `json:"FalseValue"`
 }
 
-type newColumnsConfig struct {
-	NewDurations []*newDuration `json:"NewDurations"`
-	NewSums      []*newSum      `json:"NewSums"`
-}
-
-type newColumn struct {
-	Name     string `json:"Name"`
-	PutAfter path   `json:"PutAfter"`
-}
-
-type newDuration struct {
-	newColumn
-	FromDate path `json:"FromDate"`
-	ToDate   path `json:"ToDate"`
-}
-
-type newSum struct {
-	newColumn
-	AddTogether       []path `json:"AddTogether"`
-	SubstractTogether []path `json:"SubstractTogether"`
+type newColumnConfig struct {
+	Name               string             `json:"Name"`
+	PutAfter           path               `json:"PutAfter"`
+	Formula            string             `json:"Formula"`
+	NoStat             bool               `json:"NoStat"`
+	formattableFormula string             // the formula ready to be filled with real column coordinates
+	columns            []*chainedProperty // the columns involved in the definition of the formula
 }

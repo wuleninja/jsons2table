@@ -268,23 +268,13 @@ func (commonDef *fileMap) applyColor(excelFile *excel.File) error {
 }
 
 // sets a computed value within a given cell, given a computation definition
-func (commonDef *fileMap) setComputedValue(excelFile *excel.File, row int, col int, computationDef interface{}) {
-	switch computationDef.(type) {
-	case *newDuration:
-		duration := computationDef.(*newDuration)
-		fromDate := getCell(row, commonDef.getProp(duration.FromDate).index)
-		toDate := getCell(row, commonDef.getProp(duration.ToDate).index)
-		if errSet := excelFile.SetCellFormula(mainSheetName, getCell(row, col), toDate+"-"+fromDate); errSet != nil {
-			err("error while setting computed value at row %d col %d: %s", row, col, errSet)
-		}
-	case *newSum:
-		sum := computationDef.(*newSum)
-		formula := getCell(row, commonDef.getProp(sum.AddTogether[0]).index)
-		for i := 1; i < len(sum.AddTogether); i++ {
-			formula = formula + "+" + getCell(row, commonDef.getProp(sum.AddTogether[i]).index)
-		}
-		if errSet := excelFile.SetCellFormula(mainSheetName, getCell(row, col), formula); errSet != nil {
-			err("error while setting computed value at row %d col %d: %s", row, col, errSet)
-		}
+func (commonDef *fileMap) setComputedValue(excelFile *excel.File, row int, col int, newCol *newColumnConfig) {
+	columns := []interface{}{}
+	for _, column := range newCol.columns {
+		columns = append(columns, getCell(row, column.index))
+	}
+	formula := fmt.Sprintf(newCol.formattableFormula, columns...)
+	if errSet := excelFile.SetCellFormula(mainSheetName, getCell(row, col), formula); errSet != nil {
+		err("error while setting computed value at row %d col %d: %s", row, col, errSet)
 	}
 }

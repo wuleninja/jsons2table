@@ -13,14 +13,9 @@ import (
 func (commonDef *fileMap) insertNewColumns(config *j2tConfig) error {
 
 	if config.NewColumns != nil {
-		for _, newDurationColumn := range config.NewColumns.NewDurations {
-			if errInsert := commonDef.insertDuration(newDurationColumn); errInsert != nil {
-				err("error while adding an extra duration column: %s", errInsert)
-			}
-		}
-		for _, newAdditionColumn := range config.NewColumns.NewSums {
-			if errInsert := commonDef.insertSum(newAdditionColumn); errInsert != nil {
-				err("error while adding an extra sum column: %s", errInsert)
+		for _, newColumn := range config.NewColumns {
+			if errInsert := commonDef.insertNewColumn(newColumn); errInsert != nil {
+				err("error while adding an extra column: %s", errInsert)
 			}
 		}
 	}
@@ -34,12 +29,13 @@ func (commonDef *fileMap) insertNewColumns(config *j2tConfig) error {
 }
 
 // initialising a new inserted column
-func (commonDef *fileMap) initInsertedColumn(newCol *newColumn) (*chainedProperty, error) {
+func (commonDef *fileMap) insertNewColumn(newCol *newColumnConfig) error {
 
 	// the column we're inserting right after
 	previousProp := commonDef.allChainedProperties[newCol.PutAfter]
 	if previousProp == nil {
-		return nil, fmt.Errorf("this column does not seem to exist: %s! You might wanna watch for typos", newCol.PutAfter)
+		return fmt.Errorf("error in the configuration of the new column '%s': this property does not seem to exist: %s!"+
+			" You might wanna watch for typos", newCol.Name, newCol.PutAfter)
 	}
 
 	// getting the map we're going to insert into
@@ -52,6 +48,8 @@ func (commonDef *fileMap) initInsertedColumn(newCol *newColumn) (*chainedPropert
 		computed:  true,
 		maxLength: len(newCol.Name),
 	}
+
+	// linking the property at the same level as the previous prop
 	localDef.chainedProperties[newCol.Name] = newProperty
 
 	// chaining
@@ -62,7 +60,7 @@ func (commonDef *fileMap) initInsertedColumn(newCol *newColumn) (*chainedPropert
 
 	// initialising the config
 	newProperty.conf = &configItem{
-		background: getAdjustedColor(previousProp.conf.background, 15),
+		background: getAdjustedColor(previousProp.conf.background, 2), // almost keeping the same color as the one before
 	}
 
 	// initialising the stat - this will depend on the computation definition later on (when we have time)
@@ -71,45 +69,45 @@ func (commonDef *fileMap) initInsertedColumn(newCol *newColumn) (*chainedPropert
 		kind:  statKindNUMBER, // this will have to be changed, depending on the property type
 	}
 
-	return newProperty, nil
-}
+	// preparing the stats
+	newProperty.kind = reflect.Float64
 
-// initialising a new inserted duration
-func (commonDef *fileMap) insertDuration(newCol *newDuration) error {
-	newProp, errInit := commonDef.initInsertedColumn(&newCol.newColumn)
-	if errInit != nil {
-		return errInit
+	// keeping track of the computation definition on the property itself
+	newProperty.computationDef = newCol
+
+	// parsing the formula, to check it, and build the format string that's going to be filed sometime later with real column coordinates
+	currentPropName := []rune{}
+	currentPropReading := false
+	formattableFormula := []rune{}
+	for _, rune := range []rune(newCol.Formula) {
+		switch rune {
+		case '{':
+			currentPropReading = true
+			formattableFormula = append(formattableFormula, '%', 's')
+		case '}':
+			currentPropReading = false
+			prop := commonDef.getProp(path(currentPropName))
+			if prop == nil {
+				return fmt.Errorf("error in the configuration of the new column '%s': this property does not seem to exist: %s!"+
+					" You might wanna watch for typos", newCol.Name, string(currentPropName))
+			}
+			newCol.columns = append(newCol.columns, prop)
+			currentPropName = nil
+		default:
+			if currentPropReading {
+				currentPropName = append(currentPropName, rune)
+			} else {
+				formattableFormula = append(formattableFormula, rune)
+			}
+		}
 	}
-	newProp.kind = reflect.Float64
-	newProp.computationDef = newCol
-	// checking the duration is well configured
-	if commonDef.allChainedProperties[newCol.FromDate] == nil {
-		err("error in the configuration of new duration '%s': from date '%s' does not exist. This may be a typo.", newCol.Name, newCol.FromDate)
-	}
-	if commonDef.allChainedProperties[newCol.ToDate] == nil {
-		err("error in the configuration of new duration '%s': to date '%s' does not exist. This may bea typo.", newCol.Name, newCol.ToDate)
-	}
+
+	// at this point, we should have finished building the formattable formula
+	newCol.formattableFormula = string(formattableFormula)
+
 	return nil
 }
 
-// initialising a new inserted sum
-func (commonDef *fileMap) insertSum(newCol *newSum) error {
-	newProp, errInit := commonDef.initInsertedColumn(&newCol.newColumn)
-	if errInit != nil {
-		return errInit
-	}
-	// checking the columns are well configured
-	for _, added := range newCol.AddTogether {
-		if commonDef.allChainedProperties[added] == nil {
-			err("error in the configuration of new sum '%s': column '%s' does not exist. This may be a typo.", newCol.Name, added)
-		}
-	}
-	for _, substracted := range newCol.AddTogether {
-		if commonDef.allChainedProperties[substracted] == nil {
-			err("error in the configuration of new sum '%s': column '%s' does not exist. This may be a typo.", newCol.Name, substracted)
-		}
-	}
-	newProp.kind = reflect.Float64
-	newProp.computationDef = newCol
-	return nil
-}
+// func logouille(r rune, isReadingProp bool, currentProp []rune, currentFormula []rune) {
+// 	println(fmt.Sprintf("Read: %r, Inside prop ? %t, Current Prop: "))
+// }

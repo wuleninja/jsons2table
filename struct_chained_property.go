@@ -17,13 +17,13 @@ type chainedProperty struct {
 	kind           reflect.Kind
 	previous       *chainedProperty
 	next           *chainedProperty
-	addOn          bool        // when a new property is inserted in an already existing common definition
-	index          int         // the global index for this property within the common definition
-	conf           *configItem // the config associated with this property
-	maxLength      int         // the maximum size of the column
-	statistic      *stat       // this property seen as a statistical variable
-	computed       bool        // if true, then is property is computed from other columns
-	computationDef interface{} // if this is a computed property, then how to compute stuff is set here
+	addOn          bool             // when a new property is inserted in an already existing common definition
+	index          int              // the global index for this property within the common definition
+	conf           *configItem      // the config associated with this property
+	maxLength      int              // the maximum size of the column
+	statistic      *stat            // this property seen as a statistical variable
+	computed       bool             // if true, then is property is computed from other columns
+	computationDef *newColumnConfig // if this is a computed property, then how to compute stuff is set here
 }
 
 func (thisProperty *chainedProperty) String() string {

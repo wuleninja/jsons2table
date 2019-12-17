@@ -163,14 +163,16 @@ func (thisProp *chainedProperty) writeStat(excelFile *excelize.File, headerLine,
 	statLine := footerLine + 2
 
 	// writing out the stats for this column
-	switch thisProp.statistic.kind {
-	case statKindBOOLEAN:
-		return thisProp.writeBooleanStats(excelFile, firstCell, lastCell, statLine, nbRows)
-	case statKindDATE:
-	case statKindCATEGORY:
-		return thisProp.writeCategoryStats(excelFile, firstCell, lastCell, statLine, nbRows)
-	case statKindNUMBER:
-		return thisProp.writeNumberStats(excelFile, firstCell, lastCell, statLine, nbRows)
+	if thisProp.computationDef == nil || !thisProp.computationDef.NoStat {
+		switch thisProp.statistic.kind {
+		case statKindBOOLEAN:
+			return thisProp.writeBooleanStats(excelFile, firstCell, lastCell, statLine, nbRows)
+		case statKindDATE:
+		case statKindCATEGORY:
+			return thisProp.writeCategoryStats(excelFile, firstCell, lastCell, statLine, nbRows)
+		case statKindNUMBER:
+			return thisProp.writeNumberStats(excelFile, firstCell, lastCell, statLine, nbRows)
+		}
 	}
 
 	return nil
@@ -270,6 +272,9 @@ func (thisProp *chainedProperty) writeNumberStats(excelFile *excelize.File, firs
 	}
 	if err := thisProp.writeNumberStatFn(excelFile, firstCell, lastCell, 2, statLine, "MEDIAN", numberFormat); err != nil {
 		return err
+	}
+	if !thisProp.statistic.decimal {
+		numberFormat = "0.0"
 	}
 	if err := thisProp.writeNumberStatFn(excelFile, firstCell, lastCell, 3, statLine, "AVERAGE", numberFormat); err != nil {
 		return err
