@@ -2,16 +2,84 @@
 
 
 [[projects]]
-  digest = "1:7f60bb033c03f8322869de36b3a063080593d22037c5a117007553441645adaa"
+  branch = "master"
+  digest = "1:54d31925167fabd80e042608a9a7f9a7182bbe3700164be4f22e4c1f6997d0bd"
+  name = "github.com/360EntSecGroup-Skylar/excelize"
+  packages = ["."]
+  pruneopts = "UT"
+  revision = "a691c1048d2575d70ce97d2da80c2c40a2c37fb2"
+
+[[projects]]
+  branch = "master"
+  digest = "1:84bd7f8a2e0bcd53ddc33c3b47c34c1fe340c8632cbe928f7f8ae10ec6ecdd62"
+  name = "github.com/mohae/deepcopy"
+  packages = ["."]
+  pruneopts = "UT"
+  revision = "c48cc78d482608239f6c4c92a4abd87eb8761c90"
+
+[[projects]]
+  digest = "1:fb8459b685ed5bd854573b57766937280b74b218c6fa128af6d80aa0343f4694"
   name = "github.com/tealeg/xlsx"
   packages = ["."]
   pruneopts = "UT"
-  revision = "1b556911422e5b0f499a31ddc028ccc5ad288d4c"
-  version = "v1.0.5"
+  revision = "5fbeeeef05b0f65852efca277c23d75538835f57"
+  version = "v2.0.1"
+
+[[projects]]
+  digest = "1:eea0817d0a3f31242285d323a7085bb70d027cf905b006e4418c68eca7514e0b"
+  name = "github.com/xgfone/go-tools"
+  packages = ["file"]
+  pruneopts = "UT"
+  revision = "3b639eb0582811d18ebc125e7c656dfadeda019c"
+  version = "v6.1.0"
+
+[[projects]]
+  branch = "master"
+  digest = "1:fcad7cd3276afdd1f069c25887ef7ddba9d773145d0f17831e005a0d904c3579"
+  name = "golang.org/x/net"
+  packages = [
+    "html",
+    "html/atom",
+    "html/charset",
+  ]
+  pruneopts = "UT"
+  revision = "6afb5195e5aab057fda82e27171243402346b0ad"
+
+[[projects]]
+  digest = "1:8a0baffd5559acaa560f854d7d525c02f4fec2d4f8a214398556fb661a10f6e0"
+  name = "golang.org/x/text"
+  packages = [
+    "encoding",
+    "encoding/charmap",
+    "encoding/htmlindex",
+    "encoding/internal",
+    "encoding/internal/identifier",
+    "encoding/japanese",
+    "encoding/korean",
+    "encoding/simplifiedchinese",
+    "encoding/traditionalchinese",
+    "encoding/unicode",
+    "internal/gen",
+    "internal/language",
+    "internal/language/compact",
+    "internal/tag",
+    "internal/utf8internal",
+    "language",
+    "runes",
+    "transform",
+    "unicode/cldr",
+  ]
+  pruneopts = "UT"
+  revision = "342b2e1fbaa52c93f31447ad2c6abc048c63e475"
+  version = "v0.3.2"
 
 [solve-meta]
   analyzer-name = "dep"
   analyzer-version = 1
-  input-imports = ["github.com/tealeg/xlsx"]
+  input-imports = [
+    "github.com/360EntSecGroup-Skylar/excelize",
+    "github.com/tealeg/xlsx",
+    "github.com/xgfone/go-tools/file",
+  ]
   solver-name = "gps-cdcl"
   solver-version = 1
