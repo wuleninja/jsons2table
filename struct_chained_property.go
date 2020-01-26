@@ -89,3 +89,13 @@ func (thisProperty *chainedProperty) equals(other *chainedProperty) bool {
 func (thisProperty *chainedProperty) touches(other *chainedProperty) bool {
 	return thisProperty.next.equals(other)
 }
+
+// returning the string value
+func (thisProperty *chainedProperty) stringValue() string {
+	return fmt.Sprintf("%v", thisProperty.owner.values[thisProperty.name])
+}
+
+// setting the value
+func (thisProperty *chainedProperty) setValue(kind reflect.Kind, value interface{}) {
+	thisProperty.owner.values[thisProperty.name] = value
+}

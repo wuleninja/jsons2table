@@ -9,10 +9,11 @@ import "os"
 
 // the struct for the config file
 type j2tConfig struct {
-	folderPath string
-	folderInfo os.FileInfo
-	General    *generalConfig     `json:"General"`
-	NewColumns []*newColumnConfig `json:"NewColumns"`
+	folderPath      string
+	folderInfo      os.FileInfo
+	General         *generalConfig          `json:"General"`
+	NewColumns      []*newColumnConfig      `json:"NewColumns"`
+	ModifiedColumns []*modifiedColumnConfig `json:"ModifiedColumns"`
 }
 
 type configItem struct {
@@ -31,4 +32,11 @@ type newColumnConfig struct {
 	NoStat             bool               `json:"NoStat"`
 	formattableFormula string             // the formula ready to be filled with real column coordinates
 	columns            []*chainedProperty // the columns involved in the definition of the formula
+}
+
+type modifiedColumnConfig struct {
+	SetColumn path   `json:"SetColumn"`
+	ToValue   string `json:"ToValue"`
+	When      path   `json:"When"`
+	Equals    string `json:"Equals"`
 }

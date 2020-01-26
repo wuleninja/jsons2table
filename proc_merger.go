@@ -69,7 +69,7 @@ func (commonDef *fileMap) digest(jsonMap *fileMap) *fileMap {
 				currentProperty.linkAfter(commonDef.chainedProperties[jsonMap.orderedProperties[i-1]], false)
 			}
 
-			// global registration if the property
+			// global registration of the property
 			commonDef.register(currentProperty)
 
 			// initialising the stats for this property
@@ -103,7 +103,7 @@ func (commonDef *fileMap) digest(jsonMap *fileMap) *fileMap {
 				// insertion of this new chained property at the proper place - a big part of the magic is here
 				currentProperty.link(jsonMap.chainedProperties[propertyName])
 
-				// global registration if the property
+				// global registration of the property
 				commonDef.register(currentProperty)
 
 				// initialising the stats for this property

@@ -76,6 +76,11 @@ func main() {
 		err("error while reading the config file: %s", errConf)
 	}
 
+	// changing some columns, as configured
+	if errModify := commonDef.handleModifiedColumns(config, jsonMaps); errModify != nil {
+		err("error while handling the configured modified columns: %s", errModify)
+	}
+
 	// insert the configured new columns
 	if errInsert := commonDef.insertNewColumns(config); errInsert != nil {
 		err("error while inserting the configured new columns: %s", errInsert)

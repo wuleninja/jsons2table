@@ -22,7 +22,7 @@ type fileMap struct {
 	subMaps              map[string]*fileMap         // the maps belonging to a map
 	values               map[string]interface{}      // the pure values (non-map) within a map
 	orderedProperties    []string                    // keeping track of the original order of the properties
-	originalContent      map[string]interface{}      // the raw info within this mal
+	originalContent      map[string]interface{}      // the raw info within this map
 	chainedProperties    map[string]*chainedProperty // the properties kept as chained values
 	propertyIndexes      map[string]int              // the index of each property in this map
 	height               int                         // this data tree's height
@@ -197,7 +197,24 @@ func (thisMap *fileMap) register(prop *chainedProperty) {
 	thisMap.root().allChainedProperties[prop.getPath()] = prop
 }
 
-// returns a property indexed on the cmmon definition thanks to its path
+// returns a property indexed on the COMMON definition thanks to its path
 func (thisMap *fileMap) getProp(propPath path) *chainedProperty {
 	return thisMap.root().allChainedProperties[propPath]
+}
+
+// returns a property in a given JSON MAP (not the common definition) thanks to its path
+func (thisMap *fileMap) findProp(propPath path) *chainedProperty {
+
+	pathAsString := string(propPath)
+
+	// we're not at the right level yet
+	if sepIndex := strings.Index(pathAsString, "/"); sepIndex > 0 {
+		subMapName := pathAsString[0:sepIndex]
+		if subMap := thisMap.subMaps[subMapName]; subMap != nil {
+			propSubPath := path(pathAsString[(sepIndex + 1):len(pathAsString)])
+			return subMap.findProp(propSubPath)
+		}
+		return nil
+	}
+	return thisMap.chainedProperties[pathAsString]
 }

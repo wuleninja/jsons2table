@@ -49,7 +49,7 @@ func (commonDef *fileMap) initConfigMap() {
 
 		// dealing with the top level, i.e. the first header line
 		if commonDef.parent == nil {
-			bg = getAdjustedColor(colors[index%len(colors)], 0)
+			bg = getAdjustedColor(colors[index%len(colors)], 0, false)
 
 		} else {
 
@@ -58,7 +58,7 @@ func (commonDef *fileMap) initConfigMap() {
 			if index%2 == 1 {
 				level = 30
 			}
-			bg = getAdjustedColor(commonDef.parent.chainedProperties[commonDef.name].conf.background, level*commonDef.getDepth())
+			bg = getAdjustedColor(commonDef.parent.chainedProperties[commonDef.name].conf.background, level*commonDef.getDepth(), false)
 		}
 
 		// new item

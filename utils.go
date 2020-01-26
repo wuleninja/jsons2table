@@ -79,7 +79,7 @@ var colors = []string{
 var colorChart = map[string]string{}
 
 // lightening or darkening a color
-func getAdjustedColor(color string, addedLight int) string {
+func getAdjustedColor(color string, addedLight int, forceLight bool) string {
 
 	colorKey := fmt.Sprintf("%s/%d", color, addedLight)
 
@@ -101,6 +101,11 @@ func getAdjustedColor(color string, addedLight int) string {
 	R = R + int64(addedLight)
 	G = G + int64(addedLight)
 	B = B + int64(addedLight)
+
+	// going darker if we're too light here
+	if R+G+B > 3*210 && !forceLight {
+		return getAdjustedColor(color, -15, forceLight)
+	}
 
 	if R > 255 {
 		R = 255

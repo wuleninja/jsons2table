@@ -55,12 +55,12 @@ func (commonDef *fileMap) insertNewColumn(newCol *newColumnConfig) error {
 	// chaining
 	newProperty.insertAfter(previousProp)
 
-	// global registration if the property
+	// global registration of the property
 	commonDef.register(newProperty)
 
 	// initialising the config
 	newProperty.conf = &configItem{
-		background: getAdjustedColor(previousProp.conf.background, 2), // almost keeping the same color as the one before
+		background: getAdjustedColor(previousProp.conf.background, 2, false), // almost keeping the same color as the one before
 	}
 
 	// initialising the stat - this will depend on the computation definition later on (when we have time)
@@ -107,7 +107,3 @@ func (commonDef *fileMap) insertNewColumn(newCol *newColumnConfig) error {
 
 	return nil
 }
-
-// func logouille(r rune, isReadingProp bool, currentProp []rune, currentFormula []rune) {
-// 	println(fmt.Sprintf("Read: %r, Inside prop ? %t, Current Prop: "))
-// }

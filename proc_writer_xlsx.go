@@ -139,9 +139,6 @@ func (commonDef *fileMap) writeLine(excelFile *excel.File, jsonMap *fileMap, hea
 
 	if jsonMap != nil {
 
-		log("\n+++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++++")
-		log("writing line for with '%s'", commonDef.getFullName())
-
 		// always following the order
 		for _, property := range commonDef.orderedProperties {
 
@@ -153,7 +150,6 @@ func (commonDef *fileMap) writeLine(excelFile *excel.File, jsonMap *fileMap, hea
 
 				// checking we're in the right column !
 				commonProp := commonDef.chainedProperties[property]
-				log("dealing with property %d - '%s'", commonProp.index, commonProp.getPath())
 				if header := getString(excelFile, headerLine, commonProp.index); header != property {
 					err("We have a problem here : at column %d, header says '%s', but we're dealing with '%s'",
 						commonProp.index, header, property)
@@ -183,7 +179,7 @@ func (commonDef *fileMap) writeLine(excelFile *excel.File, jsonMap *fileMap, hea
 				// oh, maybe we could do a bit of styling here
 				if even {
 					style, errNewStyle := excelFile.NewStyle(
-						fmt.Sprintf(`{"fill":{"type":"pattern","color":["%s"],"pattern":1}}`, getAdjustedColor(commonProp.conf.background, 90)))
+						fmt.Sprintf(`{"fill":{"type":"pattern","color":["%s"],"pattern":1}}`, getAdjustedColor(commonProp.conf.background, 90, true)))
 					if errNewStyle != nil {
 						return errNewStyle
 					}
@@ -267,6 +263,8 @@ func (commonDef *fileMap) applyColor(excelFile *excel.File) error {
 	return nil
 }
 
+var firstLoggedRowForFormulae int
+
 // sets a computed value within a given cell, given a computation definition
 func (commonDef *fileMap) setComputedValue(excelFile *excel.File, row int, col int, newCol *newColumnConfig) {
 	columns := []interface{}{}
@@ -274,6 +272,12 @@ func (commonDef *fileMap) setComputedValue(excelFile *excel.File, row int, col i
 		columns = append(columns, getCell(row, column.index))
 	}
 	formula := fmt.Sprintf(newCol.formattableFormula, columns...)
+	if firstLoggedRowForFormulae == 0 {
+		firstLoggedRowForFormulae = row
+	}
+	if row == firstLoggedRowForFormulae {
+		log("Formula in %s: %s", getCell(row, col), formula)
+	}
 	if errSet := excelFile.SetCellFormula(mainSheetName, getCell(row, col), formula); errSet != nil {
 		err("error while setting computed value at row %d col %d: %s", row, col, errSet)
 	}
